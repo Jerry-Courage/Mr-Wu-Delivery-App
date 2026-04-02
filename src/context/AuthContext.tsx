@@ -1,0 +1,81 @@
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { api } from "@/lib/api";
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  name: string;
+  role: "customer" | "kitchen" | "rider";
+  phone?: string | null;
+  address?: string | null;
+}
+
+interface AuthContextType {
+  user: AuthUser | null;
+  token: string | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (data: { email: string; password: string; name: string; phone?: string; role?: string; address?: string }) => Promise<void>;
+  logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem("auth_token"));
+  const [loading, setLoading] = useState(true);
+
+  const fetchMe = useCallback(async () => {
+    try {
+      const me = await api.get<AuthUser>("/auth/me");
+      setUser(me);
+    } catch {
+      localStorage.removeItem("auth_token");
+      setToken(null);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (token) {
+      fetchMe();
+    } else {
+      setLoading(false);
+    }
+  }, [token, fetchMe]);
+
+  const login = async (email: string, password: string) => {
+    const res = await api.post<{ token: string; user: AuthUser }>("/auth/login", { email, password });
+    localStorage.setItem("auth_token", res.token);
+    setToken(res.token);
+    setUser(res.user);
+  };
+
+  const register = async (data: { email: string; password: string; name: string; phone?: string; role?: string; address?: string }) => {
+    const res = await api.post<{ token: string; user: AuthUser }>("/auth/register", data);
+    localStorage.setItem("auth_token", res.token);
+    setToken(res.token);
+    setUser(res.user);
+  };
+
+  const logout = () => {
+    localStorage.removeItem("auth_token");
+    setToken(null);
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
+};
