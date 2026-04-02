@@ -49,3 +49,7 @@ waitForPort = 3001
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[ports]]
+localPort = 5001
+externalPort = 3000

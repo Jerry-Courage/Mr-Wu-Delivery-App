@@ -77,6 +77,14 @@ PATCH /api/rider/orders/:id/status  — Mark picked_up or delivered
 
 Note: For production, the Express server needs to be configured to serve the built frontend files. Currently this is a development setup.
 
-## AI Features (Planned)
+## AI Features (via OpenRouter — gpt-4o-mini)
 
-OpenRouter API key will be provided for AI recommendations and ETA predictions.
+Powered by `OPENROUTER_API_KEY`. All AI routes live in `server/ai.ts`.
+
+| Feature | Endpoint | Where shown |
+|---|---|---|
+| Personalized recommendations | `GET /api/ai/recommendations` | Home page — picks 4 dishes based on menu, order history, time of day |
+| Smart delivery ETA | `GET /api/ai/eta/:orderId` | Tracking page — estimates minutes remaining per order status |
+| Kitchen briefing | `GET /api/ai/kitchen-summary` | Management page — 1-2 sentence summary flagging urgent orders |
+
+Recommendations are cached for 5 minutes. ETA refreshes every 60 seconds. Kitchen briefing refreshes every 60 seconds.

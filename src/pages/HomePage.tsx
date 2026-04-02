@@ -1,8 +1,13 @@
-import { Search, Bell, ChevronRight, Plus, Zap } from "lucide-react";
+import { Search, Bell, ChevronRight, Plus, Zap, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { menuItems } from "@/data/menuData";
+import { useQuery } from "@tanstack/react-query";
+import { menuItems as localMenuItems } from "@/data/menuData";
+import { api } from "@/lib/api";
+import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import promoCombo from "@/assets/promo-combo.jpg";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useToast } from "@/hooks/use-toast";
 
 const categories = [
   { icon: "🍲", label: "Combos" },
@@ -12,14 +17,37 @@ const categories = [
   { icon: "🔔", label: "Specials" },
 ];
 
+interface AIRecommendation {
+  id: string;
+  name: string;
+  reason: string;
+  confidence: number;
+}
+
 const HomePage = () => {
   const navigate = useNavigate();
-  const recommended = menuItems.slice(0, 4);
-  const reorderItem = menuItems[0];
+  const { user } = useAuth();
+  const { addItem } = useCart();
+  const { toast } = useToast();
+
+  const { data: aiRecs, isLoading: aiLoading } = useQuery<AIRecommendation[]>({
+    queryKey: ["/api/ai/recommendations"],
+    queryFn: () => api.get("/ai/recommendations"),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+
+  const recommendedItems = aiRecs
+    ? aiRecs
+        .map(rec => localMenuItems.find(m => m.id === rec.id || m.name === rec.name))
+        .filter((m): m is NonNullable<typeof m> => !!m)
+        .map((m, i) => ({ ...m, aiReason: aiRecs[i]?.reason, aiConfidence: aiRecs[i]?.confidence }))
+    : localMenuItems.slice(0, 4);
+
+  const reorderItem = localMenuItems[0];
 
   return (
     <div className="pb-4">
-      {/* Header */}
       <header className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
@@ -34,22 +62,25 @@ const HomePage = () => {
         </div>
       </header>
 
-      {/* Greeting */}
       <div className="px-4 pt-2 pb-3 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Hi, Alex! 👋</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            Hi, {user?.name?.split(" ")[0] || "there"}! 👋
+          </h1>
           <p className="text-muted-foreground text-sm">Hungry for some Mr Wu's?</p>
         </div>
-        <div className="w-10 h-10 rounded-full bg-muted overflow-hidden">
-          <div className="w-full h-full bg-gradient-to-br from-secondary to-primary rounded-full" />
+        <div
+          onClick={() => navigate("/profile")}
+          className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-primary flex items-center justify-center cursor-pointer"
+        >
+          <span className="text-sm font-bold text-primary-foreground">
+            {user?.name?.charAt(0).toUpperCase() || "?"}
+          </span>
         </div>
       </div>
 
-      {/* Desktop two-column layout */}
       <div className="md:grid md:grid-cols-2 md:gap-6 md:px-4">
-        {/* Left column */}
         <div>
-          {/* Fastest Delivery Banner */}
           <div className="mx-4 md:mx-0 mb-4 bg-card border border-border rounded-xl p-3 flex items-center gap-3">
             <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
               <Zap className="w-4 h-4 text-primary" />
@@ -66,49 +97,74 @@ const HomePage = () => {
           {/* AI Recommendations */}
           <div className="px-4 md:px-0 mb-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-bold text-foreground flex items-center gap-1">
-                AI Recommendations <span className="text-secondary">⚡</span>
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-1.5">
+                AI Recommendations
+                <Sparkles className="w-4 h-4 text-primary" />
+                {aiLoading && <span className="text-xs font-normal text-muted-foreground animate-pulse">Personalizing...</span>}
               </h2>
-              <button className="text-sm text-primary font-medium">See All</button>
+              <button onClick={() => navigate("/menu")} className="text-sm text-primary font-medium">See All</button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              {recommended.map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => navigate(`/item/${item.id}`)}
-                  className="text-left"
-                >
-                  <div className="relative rounded-xl overflow-hidden h-32">
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
-                    {item.isTop && (
-                      <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-md">Most Popular</span>
-                    )}
-                    {item.tags?.includes("Spicy") && (
-                      <span className="absolute top-2 right-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-md">🔥 Spicy</span>
-                    )}
-                    <div className="absolute bottom-2 left-2 text-primary-foreground text-xs">
-                      ⭐ {item.rating} • 20-30 min
+
+            {aiLoading ? (
+              <div className="grid grid-cols-2 gap-3">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="rounded-xl overflow-hidden">
+                    <div className="h-32 bg-muted animate-pulse rounded-xl" />
+                    <div className="mt-2 h-4 bg-muted animate-pulse rounded w-3/4" />
+                    <div className="mt-1 h-3 bg-muted animate-pulse rounded w-1/2" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {recommendedItems.slice(0, 4).map(item => (
+                  <div key={item.id} className="group">
+                    <button
+                      data-testid={`card-recommendation-${item.id}`}
+                      onClick={() => navigate(`/item/${item.id}`)}
+                      className="w-full text-left"
+                    >
+                      <div className="relative rounded-xl overflow-hidden h-32">
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" loading="lazy" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
+                        {item.isTop && (
+                          <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-md">Most Popular</span>
+                        )}
+                        {item.tags?.includes("Spicy") && (
+                          <span className="absolute top-2 right-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-md">🔥 Spicy</span>
+                        )}
+                        <div className="absolute bottom-2 left-2 text-primary-foreground text-xs">
+                          ⭐ {item.rating || "4.8"} • 20-30 min
+                        </div>
+                      </div>
+                    </button>
+                    <div className="mt-2 flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{item.name}</p>
+                        {"aiReason" in item && item.aiReason && (
+                          <p className="text-xs text-primary truncate">{String(item.aiReason)}</p>
+                        )}
+                        <p className="text-sm font-bold text-foreground">${item.price.toFixed(2)}</p>
+                      </div>
+                      <button
+                        data-testid={`button-add-${item.id}`}
+                        onClick={() => {
+                          addItem(item);
+                          toast({ title: `${item.name} added to cart` });
+                        }}
+                        className="w-7 h-7 bg-primary rounded-full flex items-center justify-center flex-shrink-0 ml-2"
+                      >
+                        <Plus className="w-4 h-4 text-primary-foreground" />
+                      </button>
                     </div>
                   </div>
-                  <div className="mt-2 flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground truncate">{item.name}</p>
-                      <p className="text-sm font-bold text-primary">${item.price.toFixed(2)}</p>
-                    </div>
-                    <div className="w-7 h-7 bg-muted rounded-full flex items-center justify-center">
-                      <Plus className="w-4 h-4 text-foreground" />
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Right column */}
         <div>
-          {/* Categories */}
           <div className="flex justify-around px-4 md:px-0 mb-5">
             {categories.map(c => (
               <button key={c.label} onClick={() => navigate("/menu")} className="flex flex-col items-center gap-1">
@@ -118,39 +174,44 @@ const HomePage = () => {
             ))}
           </div>
 
-          {/* Promo Banner */}
           <div className="mx-4 md:mx-0 mb-5 bg-primary rounded-2xl overflow-hidden relative">
             <div className="p-5 pr-32">
               <span className="bg-secondary text-secondary-foreground text-xs font-bold px-2 py-1 rounded-md">Weekend Special</span>
               <h3 className="text-xl font-bold text-primary-foreground mt-2">Get 30% Off Your First Combo!</h3>
               <p className="text-primary-foreground/80 text-xs mt-1">Valid until Sunday. Use code: WUFIRST30</p>
-              <button className="mt-3 bg-card text-primary text-sm font-bold px-4 py-2 rounded-lg">Order Now</button>
+              <button onClick={() => navigate("/menu")} className="mt-3 bg-card text-primary text-sm font-bold px-4 py-2 rounded-lg">Order Now</button>
             </div>
             <img src={promoCombo} alt="Promo" className="absolute right-2 bottom-2 w-24 h-24 rounded-xl object-cover" loading="lazy" />
           </div>
 
-          {/* Pick Up Where You Left Off */}
           <div className="px-4 md:px-0 mb-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-bold text-foreground">Pick Up Where You Left Off</h2>
-              <button className="text-sm text-muted-foreground">History</button>
+              <button onClick={() => navigate("/orders")} className="text-sm text-muted-foreground">History</button>
             </div>
-            <div className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
-              <img src={reorderItem.image} alt={reorderItem.name} className="w-14 h-14 rounded-lg object-cover" loading="lazy" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">Mr Wu's - Downtown</p>
-                <p className="text-xs text-muted-foreground truncate">Beef Broccoli, Veggie R...</p>
-                <p className="text-xs text-primary mt-0.5">Last Tuesday</p>
+            {user ? (
+              <div className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
+                <img src={reorderItem.image} alt={reorderItem.name} className="w-14 h-14 rounded-lg object-cover" loading="lazy" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">Mr Wu's - Downtown</p>
+                  <p className="text-xs text-muted-foreground truncate">Beef Broccoli, Veggie R...</p>
+                  <p className="text-xs text-primary mt-0.5">Last Tuesday</p>
+                </div>
+                <button onClick={() => navigate("/orders")} className="border border-primary text-primary text-xs font-bold px-3 py-1.5 rounded-lg">Reorder</button>
               </div>
-              <button className="border border-primary text-primary text-xs font-bold px-3 py-1.5 rounded-lg">Reorder</button>
-            </div>
+            ) : (
+              <div className="bg-card border border-border rounded-xl p-4 text-center">
+                <p className="text-sm text-muted-foreground mb-2">Sign in to see your order history</p>
+                <button onClick={() => navigate("/login")} className="text-primary font-semibold text-sm">Sign In</button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Start New Order */}
       <div className="px-4">
         <button
+          data-testid="button-start-order"
           onClick={() => navigate("/menu")}
           className="w-full bg-primary text-primary-foreground font-bold py-3.5 rounded-xl text-base flex items-center justify-center gap-2"
         >

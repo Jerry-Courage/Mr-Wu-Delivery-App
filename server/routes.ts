@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { storage } from "./storage";
 import { z } from "zod";
+import { getRecommendations, getOrderETA, getKitchenSummary } from "./ai";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "mrwus-secret-key-change-in-production";
@@ -176,6 +177,74 @@ router.patch("/rider/orders/:id/status", auth, requireRole("rider"), async (req:
 
   const updated = await storage.updateOrderStatus(Number(req.params.id), status);
   res.json(updated);
+});
+
+// ─── AI ──────────────────────────────────────────────────────────────────────
+
+router.get("/ai/recommendations", async (req: AuthRequest, res) => {
+  try {
+    const menuItems = await storage.getMenuItems();
+    const recentOrders = req.headers.authorization
+      ? await (async () => {
+          const token = req.headers.authorization?.split(" ")[1];
+          if (!token) return [];
+          try {
+            const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
+            return await storage.getOrdersByUser(decoded.id);
+          } catch { return []; }
+        })()
+      : [];
+
+    const hour = new Date().getHours();
+    const timeOfDay =
+      hour < 11 ? "morning" : hour < 15 ? "afternoon" : hour < 21 ? "evening" : "night";
+
+    const simplified = menuItems.map(m => ({
+      id: m.id,
+      name: m.name,
+      category: m.category,
+      price: m.price,
+      tags: m.tags,
+    }));
+
+    const recs = await getRecommendations(simplified, recentOrders, timeOfDay);
+    res.json(recs);
+  } catch (err) {
+    console.error("AI recommendations error:", err);
+    res.status(500).json({ error: "AI service unavailable" });
+  }
+});
+
+router.get("/ai/eta/:orderId", auth, async (req: AuthRequest, res) => {
+  try {
+    const order = await storage.getOrderById(Number(req.params.orderId));
+    if (!order) return res.status(404).json({ error: "Order not found" });
+    if (req.user!.role === "customer" && order.userId !== req.user!.id) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    const eta = await getOrderETA(order.status, new Date(order.createdAt), order.items.length);
+    res.json(eta);
+  } catch (err) {
+    console.error("AI ETA error:", err);
+    res.status(500).json({ error: "AI service unavailable" });
+  }
+});
+
+router.get("/ai/kitchen-summary", auth, requireRole("kitchen"), async (_req, res) => {
+  try {
+    const allOrders = await storage.getAllOrders();
+    const simplified = allOrders.map(o => ({
+      id: o.id,
+      status: o.status,
+      createdAt: new Date(o.createdAt),
+      items: o.items.map(i => ({ name: i.name, quantity: i.quantity })),
+    }));
+    const summary = await getKitchenSummary(simplified);
+    res.json({ summary });
+  } catch (err) {
+    console.error("AI kitchen summary error:", err);
+    res.status(500).json({ error: "AI service unavailable" });
+  }
 });
 
 export default router;

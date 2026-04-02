@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { ChefHat, Clock, CheckCircle, Bike, Package, LogOut, RefreshCw, UserCheck } from "lucide-react";
+import { ChefHat, Clock, CheckCircle, Bike, Package, LogOut, RefreshCw, UserCheck, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type OrderStatus = "pending" | "confirmed" | "preparing" | "ready" | "assigned" | "picked_up" | "delivered" | "cancelled";
@@ -71,6 +71,13 @@ const ManagementPage = () => {
   const { data: riders = [] } = useQuery<Rider[]>({
     queryKey: ["/api/management/riders"],
     queryFn: () => api.get("/management/riders"),
+  });
+
+  const { data: aiSummary, isLoading: aiLoading } = useQuery<{ summary: string }>({
+    queryKey: ["/api/ai/kitchen-summary"],
+    queryFn: () => api.get("/ai/kitchen-summary"),
+    refetchInterval: 60000,
+    retry: 1,
   });
 
   const statusMutation = useMutation({
@@ -147,6 +154,23 @@ const ManagementPage = () => {
             <p className="text-xs text-muted-foreground">{label}</p>
           </div>
         ))}
+      </div>
+
+      {/* AI Kitchen Briefing */}
+      <div className="px-4 pb-3">
+        <div className="bg-card border border-border rounded-xl p-3 flex items-start gap-3">
+          <div className="w-7 h-7 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-primary uppercase mb-0.5">AI Kitchen Briefing</p>
+            {aiLoading ? (
+              <div className="h-4 bg-muted animate-pulse rounded w-4/5" />
+            ) : (
+              <p className="text-sm text-foreground leading-snug">{aiSummary?.summary || "Fetching kitchen status..."}</p>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Filter Tabs */}

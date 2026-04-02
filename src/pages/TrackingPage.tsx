@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Share2, Phone, MapPin } from "lucide-react";
+import { Share2, Phone, MapPin, Sparkles } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import { api } from "@/lib/api";
 
@@ -15,6 +15,11 @@ interface OrderDetail {
   createdAt: string;
   notes?: string | null;
   items: OrderItem[];
+}
+
+interface AIEta {
+  minutes: number;
+  message: string;
 }
 
 const STEPS: { status: OrderStatus; label: string; desc: string }[] = [
@@ -38,6 +43,14 @@ const TrackingPage = () => {
     queryFn: () => api.get(`/orders/${id}`),
     refetchInterval: 10000,
     enabled: !!id,
+  });
+
+  const { data: eta } = useQuery<AIEta>({
+    queryKey: ["/api/ai/eta", id],
+    queryFn: () => api.get(`/ai/eta/${id}`),
+    enabled: !!id && !!order && order.status !== "delivered",
+    refetchInterval: 60000,
+    retry: 1,
   });
 
   if (isLoading) {
@@ -84,6 +97,27 @@ const TrackingPage = () => {
               <p className="text-xs opacity-70 truncate">{order.deliveryAddress}</p>
             </div>
           </div>
+
+          {/* AI ETA Card */}
+          {order.status !== "delivered" && order.status !== "cancelled" && (
+            <div className="mx-4 md:mx-0 mt-3 bg-card border border-border rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-xs font-semibold text-primary uppercase">AI Estimate</span>
+              </div>
+              {eta ? (
+                <>
+                  <p className="text-2xl font-bold text-foreground">{eta.minutes} min</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">{eta.message}</p>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <div className="h-7 w-24 bg-muted animate-pulse rounded" />
+                  <div className="h-4 w-48 bg-muted animate-pulse rounded" />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Order Summary */}
           <div className="mx-4 md:mx-0 mt-4 bg-card border border-border rounded-2xl p-4">
