@@ -14,7 +14,7 @@ const BottomNav = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-bottom">
-      <div className="max-w-lg mx-auto flex items-center justify-around py-2">
+      <div className="max-w-5xl mx-auto flex items-center justify-around py-2">
         {tabs.map(({ icon: Icon, label, path }) => {
           const active = location.pathname === path;
           return (

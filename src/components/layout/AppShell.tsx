@@ -14,11 +14,11 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
   const showCartBar = totalItems > 0 && showNav;
 
   return (
-    <div className="min-h-screen bg-background max-w-lg mx-auto relative">
+    <div className="min-h-screen bg-background max-w-5xl mx-auto relative">
       {children}
       {showCartBar && (
         <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2">
-          <div className="max-w-lg mx-auto">
+          <div className="max-w-5xl mx-auto">
             <button
               onClick={() => navigate("/checkout")}
               className="w-full flex items-center justify-between bg-primary text-primary-foreground rounded-xl px-5 py-3.5 shadow-lg"
