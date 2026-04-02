@@ -75,13 +75,13 @@ const MenuPage = () => {
         </div>
       )}
 
-      {/* Popular Items */}
+      {/* Popular Items - responsive grid */}
       <div className="px-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-bold text-foreground">Popular Items</h3>
           <button className="text-sm text-primary font-medium">View All</button>
         </div>
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {filtered.map(item => (
             <button
               key={item.id}

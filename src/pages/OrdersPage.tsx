@@ -41,46 +41,48 @@ const OrdersPage = () => {
         </div>
       </div>
 
-      {/* Orders */}
+      {/* Orders - responsive grid on desktop */}
       <div className="px-4">
         {["RECENT ACTIVITY", "EARLIER THIS MONTH"].map(section => (
           <div key={section}>
             <h3 className="text-xs font-semibold text-muted-foreground uppercase mt-5 mb-3 tracking-wider">{section}</h3>
-            {orders.filter(o => o.section === section).map(order => (
-              <div key={order.id} className="border-b border-border py-4">
-                <div className="flex items-start gap-3">
-                  <img src={order.img} alt={order.name} className="w-16 h-16 rounded-lg object-cover" loading="lazy" />
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">ORDER #{order.id}</p>
-                        <h4 className="font-semibold text-foreground text-sm">{order.name}</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {orders.filter(o => o.section === section).map(order => (
+                <div key={order.id} className="border border-border rounded-xl p-4">
+                  <div className="flex items-start gap-3">
+                    <img src={order.img} alt={order.name} className="w-16 h-16 rounded-lg object-cover" loading="lazy" />
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground">ORDER #{order.id}</p>
+                          <h4 className="font-semibold text-foreground text-sm">{order.name}</h4>
+                        </div>
+                        <Heart className={`w-5 h-5 ${order.fav ? "text-primary fill-current" : "text-muted-foreground"}`} />
                       </div>
-                      <Heart className={`w-5 h-5 ${order.fav ? "text-primary fill-current" : "text-muted-foreground"}`} />
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                        order.status === "Delivered" ? "bg-muted text-foreground" : "bg-primary/10 text-primary"
-                      }`}>{order.status}</span>
-                      <span className="text-xs text-muted-foreground">⏰ {order.date}</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                          order.status === "Delivered" ? "bg-muted text-foreground" : "bg-primary/10 text-primary"
+                        }`}>{order.status}</span>
+                        <span className="text-xs text-muted-foreground">⏰ {order.date}</span>
+                      </div>
                     </div>
                   </div>
+                  <div className="flex items-center justify-between mt-3">
+                    <button className="flex items-center gap-1 text-sm text-primary font-medium">
+                      📋 View Receipt & Details <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <button className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold">
+                      <RotateCcw className="w-3.5 h-3.5" /> Reorder
+                    </button>
+                    <button className="flex items-center gap-1.5 text-foreground px-4 py-2 text-sm font-medium">
+                      <Edit className="w-3.5 h-3.5" /> Edit & Repeat
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between mt-3">
-                  <button className="flex items-center gap-1 text-sm text-primary font-medium">
-                    📋 View Receipt & Details <ChevronDown className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="flex gap-2 mt-2">
-                  <button className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold">
-                    <RotateCcw className="w-3.5 h-3.5" /> Reorder
-                  </button>
-                  <button className="flex items-center gap-1.5 text-foreground px-4 py-2 text-sm font-medium">
-                    <Edit className="w-3.5 h-3.5" /> Edit & Repeat
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ))}
 
@@ -89,7 +91,7 @@ const OrdersPage = () => {
           <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">AI Smart Suggestion</span>
           <h3 className="font-bold text-foreground mt-2">Craving your usual Friday night meal?</h3>
           <p className="text-sm text-muted-foreground mt-1">Mr Wu remembers you love the General Tso's Combo on Fridays. Want to reorder with one tap?</p>
-          <button className="w-full bg-primary text-primary-foreground font-bold py-2.5 rounded-xl mt-3 text-sm">Yes, Reorder My Usual</button>
+          <button className="w-full md:w-auto bg-primary text-primary-foreground font-bold py-2.5 px-6 rounded-xl mt-3 text-sm">Yes, Reorder My Usual</button>
         </div>
 
         {/* Footer */}

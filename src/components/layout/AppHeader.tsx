@@ -1,5 +1,6 @@
 import { ChevronLeft, Search, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface AppHeaderProps {
   title: string;
@@ -21,6 +22,7 @@ const AppHeader = ({ title, showBack = false, rightIcon }: AppHeaderProps) => {
       </div>
       <h1 className="text-lg font-bold text-foreground">{title}</h1>
       <div className="flex items-center gap-3">
+        <ThemeToggle />
         <button onClick={() => navigate("/search")}>
           <Search className="w-5 h-5 text-foreground" />
         </button>
