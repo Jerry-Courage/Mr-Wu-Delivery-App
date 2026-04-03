@@ -168,19 +168,80 @@ router.get("/orders/:id", auth, async (req: AuthRequest, res) => {
   res.json(order);
 });
 
-// ─── Payments (Mock) ────────────────────────────────────────────────────────
+// ─── Payments (Paystack) ─────────────────────────────────────────────────────
 
-router.post("/payments/process", auth, async (req: AuthRequest, res) => {
-  const { orderId, amount, method } = req.body;
-  if (!orderId || !amount) return res.status(400).json({ error: "orderId and amount required" });
+router.get("/payments/config", (_req, res) => {
+  res.json({ publicKey: process.env.PAYSTACK_PUBLIC_KEY || "" });
+});
 
-  // Simulate payment processing delay
-  await new Promise(r => setTimeout(r, 1500));
+router.post("/payments/initialize", auth, async (req: AuthRequest, res) => {
+  const { orderId, email, amount } = req.body;
+  if (!orderId || !email || !amount) {
+    return res.status(400).json({ error: "orderId, email, and amount required" });
+  }
 
-  const transactionId = `txn_${Math.random().toString(36).substr(2, 9)}`;
-  const order = await storage.updatePaymentStatus(Number(orderId), "completed", transactionId);
-  
-  res.json({ success: true, transactionId, order });
+  const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+  if (!PAYSTACK_SECRET_KEY) {
+    return res.status(500).json({ error: "Paystack not configured" });
+  }
+
+  // Amount in pesewas (GHS) — multiply by 100
+  const amountInPesewas = Math.round(parseFloat(amount) * 100);
+
+  try {
+    const response = await fetch("https://api.paystack.co/transaction/initialize", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        amount: amountInPesewas,
+        currency: "GHS",
+        metadata: { orderId, custom_fields: [{ display_name: "Order ID", variable_name: "order_id", value: String(orderId) }] },
+      }),
+    });
+
+    const data = await response.json() as { status: boolean; data?: { access_code: string; reference: string } };
+    if (!data.status || !data.data) {
+      return res.status(400).json({ error: "Paystack initialization failed" });
+    }
+
+    res.json({ accessCode: data.data.access_code, reference: data.data.reference });
+  } catch (err) {
+    console.error("Paystack init error:", err);
+    res.status(500).json({ error: "Payment initialization failed" });
+  }
+});
+
+router.post("/payments/verify", auth, async (req: AuthRequest, res) => {
+  const { reference, orderId } = req.body;
+  if (!reference || !orderId) {
+    return res.status(400).json({ error: "reference and orderId required" });
+  }
+
+  const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+  if (!PAYSTACK_SECRET_KEY) {
+    return res.status(500).json({ error: "Paystack not configured" });
+  }
+
+  try {
+    const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+      headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
+    });
+
+    const data = await response.json() as { status: boolean; data?: { status: string; reference: string } };
+    if (!data.status || data.data?.status !== "success") {
+      return res.status(400).json({ error: "Payment verification failed" });
+    }
+
+    const order = await storage.updatePaymentStatus(Number(orderId), "completed", reference);
+    res.json({ success: true, reference, order });
+  } catch (err) {
+    console.error("Paystack verify error:", err);
+    res.status(500).json({ error: "Payment verification failed" });
+  }
 });
 
 // ─── Orders (Kitchen / Management) ──────────────────────────────────────────

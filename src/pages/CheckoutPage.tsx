@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Trash2, Minus, Plus, MapPin, Clock, CreditCard, Smartphone, Heart } from "lucide-react";
+import { Trash2, Minus, Plus, MapPin, Clock, CreditCard, Smartphone, Heart, Loader2 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -10,6 +10,33 @@ import { useToast } from "@/hooks/use-toast";
 
 const tipOptions = [15, 20, 25, 30];
 
+declare global {
+  interface Window {
+    PaystackPop: {
+      setup: (options: {
+        key: string;
+        email: string;
+        amount: number;
+        currency: string;
+        ref: string;
+        onClose: () => void;
+        callback: (response: { reference: string }) => void;
+      }) => { openIframe: () => void };
+    };
+  }
+}
+
+function loadPaystackScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (window.PaystackPop) return resolve();
+    const script = document.createElement("script");
+    script.src = "https://js.paystack.co/v1/inline.js";
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Paystack"));
+    document.head.appendChild(script);
+  });
+}
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { items, updateQuantity, removeItem, subtotal, clearCart } = useCart();
@@ -18,55 +45,93 @@ const CheckoutPage = () => {
 
   const [orderType, setOrderType] = useState<"delivery" | "pickup">("delivery");
   const [tipPercent, setTipPercent] = useState(20);
-  const [paymentMethod, setPaymentMethod] = useState<"apple" | "visa">("apple");
+  const [paymentMethod, setPaymentMethod] = useState<"paystack" | "card">("paystack");
   const [address, setAddress] = useState(user?.address || "");
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const deliveryFee = orderType === "delivery" ? 3.99 : 0;
   const tip = subtotal * (tipPercent / 100);
   const tax = subtotal * 0.08;
   const total = subtotal + deliveryFee + tip + tax;
 
-  const placeOrderMutation = useMutation({
-    mutationFn: async () => {
-      // 1. Create the order
-      const order = await api.post<{ id: number }>("/orders", {
+  const createOrderMutation = useMutation({
+    mutationFn: () =>
+      api.post<{ id: number }>("/orders", {
         deliveryAddress: orderType === "delivery" ? (address || "Main St, 123") : "Pickup",
         subtotal: subtotal.toFixed(2),
         deliveryFee: deliveryFee.toFixed(2),
         tax: tax.toFixed(2),
         tip: tip.toFixed(2),
         total: total.toFixed(2),
-        paymentMethod: paymentMethod === "apple" ? "apple_pay" : "card",
+        paymentMethod: "paystack",
         items: items.map(({ item, quantity }) => ({
           name: item.name,
           price: item.price.toFixed(2),
           quantity,
         })),
-      });
-
-      // 2. Process mock payment
-      await api.post("/payments/process", {
-        orderId: order.id,
-        amount: total.toFixed(2),
-        method: paymentMethod === "apple" ? "apple_pay" : "card",
-      });
-
-      return order;
-    },
-    onSuccess: (data) => {
-      clearCart();
-      toast({ title: "Order Confirmed!", description: "Your payment was processed successfully." });
-      navigate(`/tracking/${data.id}`);
-    },
-    onError: (err: Error) => {
-      if (!user) {
-        toast({ title: "Please sign in to place an order", variant: "destructive" });
-        navigate("/login", { state: { from: "/checkout" } });
-      } else {
-        toast({ title: "Order failed", description: err.message, variant: "destructive" });
-      }
-    },
+      }),
   });
+
+  const handlePlaceOrder = async () => {
+    if (!user) {
+      toast({ title: "Please sign in to place an order", variant: "destructive" });
+      navigate("/login", { state: { from: "/checkout" } });
+      return;
+    }
+    if (items.length === 0) return;
+
+    setIsProcessing(true);
+    try {
+      // 1. Create the order first
+      const order = await createOrderMutation.mutateAsync();
+
+      // 2. Load Paystack script + fetch public key
+      const [, config, init] = await Promise.all([
+        loadPaystackScript(),
+        api.get<{ publicKey: string }>("/payments/config"),
+        api.post<{ accessCode: string; reference: string }>("/payments/initialize", {
+          orderId: order.id,
+          email: user.email,
+          amount: total.toFixed(2),
+        }),
+      ]);
+
+      setIsProcessing(false);
+
+      // 3. Open Paystack popup
+      const handler = window.PaystackPop.setup({
+        key: config.publicKey,
+        email: user.email,
+        amount: Math.round(total * 100),
+        currency: "GHS",
+        ref: init.reference,
+        onClose: () => {
+          toast({ title: "Payment cancelled", description: "Your order was created but not paid. Try again.", variant: "destructive" });
+        },
+        callback: async (response) => {
+          setIsProcessing(true);
+          try {
+            await api.post("/payments/verify", {
+              reference: response.reference,
+              orderId: order.id,
+            });
+            clearCart();
+            toast({ title: "Payment Successful!", description: "Your order is confirmed." });
+            navigate(`/tracking/${order.id}`);
+          } catch {
+            toast({ title: "Payment verification failed", description: "Contact support with ref: " + response.reference, variant: "destructive" });
+          } finally {
+            setIsProcessing(false);
+          }
+        },
+      });
+
+      handler.openIframe();
+    } catch (err: any) {
+      setIsProcessing(false);
+      toast({ title: "Order failed", description: err.message, variant: "destructive" });
+    }
+  };
 
   return (
     <div className="pb-28">
@@ -181,8 +246,8 @@ const CheckoutPage = () => {
             <h2 className="font-bold text-foreground mb-3">Payment</h2>
             <div className="space-y-2">
               {[
-                { key: "apple" as const, label: "Apple Pay", sub: "Touch ID", icon: Smartphone },
-                { key: "visa" as const, label: "Visa •••• 4421", sub: "Expires 09/26", icon: CreditCard },
+                { key: "paystack" as const, label: "Paystack", sub: "Pay securely via card, mobile money & more", icon: Smartphone },
+                { key: "card" as const, label: "Card (Direct)", sub: "Visa, Mastercard", icon: CreditCard },
               ].map(({ key, label, sub, icon: Icon }) => (
                 <button
                   key={key}
@@ -203,19 +268,20 @@ const CheckoutPage = () => {
                 </button>
               ))}
             </div>
+            <p className="text-xs text-muted-foreground mt-2 px-1">Payments are processed securely by Paystack. Supports mobile money (MTN, Vodafone, AirtelTigo), cards & more.</p>
           </div>
 
           <div className="mx-4 md:mx-0 mt-6 bg-muted rounded-2xl p-4">
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span className="text-foreground">${subtotal.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Delivery Fee</span><span className="text-foreground">${deliveryFee.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Estimated Tax</span><span className="text-foreground">${tax.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Tip</span><span className="text-foreground">${tip.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span className="text-foreground">GH₵{subtotal.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Delivery Fee</span><span className="text-foreground">GH₵{deliveryFee.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Estimated Tax</span><span className="text-foreground">GH₵{tax.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Tip</span><span className="text-foreground">GH₵{tip.toFixed(2)}</span></div>
               <div className="border-t border-border my-2" />
               <div className="flex justify-between items-end">
                 <div>
                   <p className="text-xs text-primary font-semibold uppercase">TOTAL</p>
-                  <p className="text-2xl font-bold text-foreground">${total.toFixed(2)}</p>
+                  <p className="text-2xl font-bold text-foreground">GH₵{total.toFixed(2)}</p>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Clock className="w-3.5 h-3.5" /> Est. 20-30 min
@@ -233,11 +299,15 @@ const CheckoutPage = () => {
           </button>
           <button
             data-testid="button-place-order"
-            onClick={() => placeOrderMutation.mutate()}
-            disabled={placeOrderMutation.isPending || items.length === 0}
-            className="flex-1 bg-primary text-primary-foreground font-bold py-3 rounded-xl text-sm disabled:opacity-60"
+            onClick={handlePlaceOrder}
+            disabled={isProcessing || items.length === 0}
+            className="flex-1 bg-primary text-primary-foreground font-bold py-3 rounded-xl text-sm disabled:opacity-60 flex items-center justify-center gap-2"
           >
-            {placeOrderMutation.isPending ? "Placing Order..." : `Place Order • $${total.toFixed(2)}`}
+            {isProcessing ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+            ) : (
+              `Pay GH₵${total.toFixed(2)} via Paystack`
+            )}
           </button>
         </div>
       </div>
