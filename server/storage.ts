@@ -166,6 +166,7 @@ export class Storage implements IStorage {
     notes?: string;
     items: { menuItemId?: number; name: string; price: string; quantity: number; extras?: string[]; specialInstructions?: string }[];
   }): Promise<Order> {
+    const now = new Date();
     const [order] = await db.insert(orders).values({
       userId: data.userId,
       deliveryAddress: data.deliveryAddress,
@@ -177,6 +178,8 @@ export class Storage implements IStorage {
       paymentMethod: data.paymentMethod,
       notes: data.notes,
       status: "pending",
+      createdAt: now,
+      updatedAt: now,
     }).returning();
 
     if (data.items.length > 0) {
@@ -286,15 +289,21 @@ export class Storage implements IStorage {
   }> {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
+    const cutoffMs = cutoff.getTime();
 
-    const recentOrders = await db.select().from(orders).where(sql`${orders.createdAt} >= ${cutoff}`);
+    const allOrders = await db.select().from(orders);
+    const recentOrders = allOrders.filter(o => {
+      if (!o.createdAt || isNaN(o.createdAt.getTime())) return true; // include legacy orders with bad timestamps
+      return o.createdAt.getTime() >= cutoffMs;
+    });
     
     // Aggregate by date
     const dailyStats: Record<string, { revenue: number, orders: number }> = {};
     let totalRevenue = 0;
 
     recentOrders.forEach(order => {
-      const date = order.createdAt.toISOString().split('T')[0];
+      const ts = (order.createdAt && !isNaN(order.createdAt.getTime())) ? order.createdAt : new Date();
+      const date = ts.toISOString().split('T')[0];
       const amount = parseFloat(order.total);
       totalRevenue += amount;
 

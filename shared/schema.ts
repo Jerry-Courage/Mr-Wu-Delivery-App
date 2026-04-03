@@ -24,7 +24,7 @@ export const users = sqliteTable("users", {
   phone: text("phone"),
   role: text("role", { enum: roles }).notNull().default("customer"),
   address: text("address"),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
 });
 
 export const menuItems = sqliteTable("menu_items", {
@@ -40,8 +40,8 @@ export const menuItems = sqliteTable("menu_items", {
   reviews: integer("reviews"),
   isTop: integer("is_top").default(0),
   isAvailable: integer("is_available").default(1),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-  updatedAt: integer("updated_at", { mode: 'timestamp' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+  updatedAt: integer("updated_at", { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
 });
 
 export const orders = sqliteTable("orders", {
@@ -59,8 +59,8 @@ export const orders = sqliteTable("orders", {
   transactionId: text("transaction_id"),
   riderId: integer("rider_id").references(() => users.id),
   notes: text("notes"),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-  updatedAt: integer("updated_at", { mode: 'timestamp' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+  updatedAt: integer("updated_at", { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
 });
 
 export const orderItems = sqliteTable("order_items", {
