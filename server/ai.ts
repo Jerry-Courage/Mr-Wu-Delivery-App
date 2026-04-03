@@ -158,6 +158,37 @@ Give a short, helpful 1-2 sentence kitchen briefing. Flag anything urgent (order
 
   return response.trim() || "All orders looking good. Keep up the great work!";
 }
+export async function searchMenu(
+  query: string,
+  menuItems: { id: number; name: string; category: string; price: string; description: string; tags: string[] | null }[]
+): Promise<{ message: string; itemIds: number[] }> {
+  const menuText = menuItems
+    .map(i => `ID:${i.id} "${i.name}" (${i.category}, $${i.price}) - ${i.description}${i.tags?.length ? " [" + i.tags.join(", ") + "]" : ""}`)
+    .join("\n");
+
+  const prompt = `You are a smart food assistant at Mr Wu's Chinese restaurant.
+
+Available menu:
+${menuText}
+
+Customer query: "${query}"
+
+Find the best matching items and write a short, friendly 1-2 sentence response. Return valid JSON only:
+{"message":"Here are some great options for you!","itemIds":[1,3]}`;
+
+  const response = await chat([
+    { role: "system", content: "You are a helpful restaurant food assistant. Always respond with valid JSON only." },
+    { role: "user", content: prompt },
+  ]);
+
+  try {
+    const cleaned = response.trim().replace(/^```json\n?|```$/g, "");
+    return JSON.parse(cleaned);
+  } catch {
+    return { message: "Here are some items you might enjoy!", itemIds: menuItems.slice(0, 3).map(i => i.id) };
+  }
+}
+
 export async function getAdminInsights(
   stats: {
     revenue: { date: string; amount: number }[];

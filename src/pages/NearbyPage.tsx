@@ -1,31 +1,83 @@
+import { useEffect, useRef } from "react";
 import { MapPin, Navigation, Clock, Star, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AppHeader from "@/components/layout/AppHeader";
+import "leaflet/dist/leaflet.css";
 
 const locations = [
-  { name: "Mr Wu's Downtown", badge: "⚡FASTEST", address: "123 Dragon Way, Center City", dist: "0.8 mi", rating: 4.8, time: "15-20 min", status: "Open" },
-  { name: "Wu's Express North", address: "456 Bamboo Lane, Northside", dist: "2.4 mi", rating: 4.5, time: "25-35 min", status: "Open" },
-  { name: "Mr Wu's Garden Hills", address: "789 Lotus St, West Side", dist: "3.1 mi", rating: 4.2, time: "30-45 min", status: "Closing Soon" },
+  { name: "Mr Wu's Downtown", badge: "⚡FASTEST", address: "123 Dragon Way, Center City", dist: "0.8 mi", rating: 4.8, time: "15-20 min", status: "Open", lat: 51.5074, lng: -0.1278 },
+  { name: "Wu's Express North", address: "456 Bamboo Lane, Northside", dist: "2.4 mi", rating: 4.5, time: "25-35 min", status: "Open", lat: 51.5300, lng: -0.1200 },
+  { name: "Mr Wu's Garden Hills", address: "789 Lotus St, West Side", dist: "3.1 mi", rating: 4.2, time: "30-45 min", status: "Closing Soon", lat: 51.5020, lng: -0.1700 },
 ];
 
 const NearbyPage = () => {
   const navigate = useNavigate();
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+
+    import("leaflet").then(L => {
+      delete (L.Icon.Default.prototype as any)._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+      });
+
+      const map = L.map(mapRef.current!, {
+        center: [51.515, -0.14],
+        zoom: 12,
+        zoomControl: true,
+        scrollWheelZoom: false,
+      });
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 18,
+      }).addTo(map);
+
+      locations.forEach(loc => {
+        const popup = `
+          <div style="font-family:sans-serif;min-width:160px">
+            <strong style="display:block;margin-bottom:4px">${loc.name}</strong>
+            <span style="font-size:12px;color:#666">${loc.address}</span>
+            <div style="margin-top:6px;font-size:12px">
+              ⭐ ${loc.rating} &nbsp;|&nbsp; 🕐 ${loc.time}
+            </div>
+          </div>
+        `;
+        L.marker([loc.lat, loc.lng])
+          .addTo(map)
+          .bindPopup(popup);
+      });
+
+      mapInstanceRef.current = map;
+    });
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <div className="pb-4">
       <AppHeader title="Find Mr Wu's" />
 
-      {/* Desktop: side-by-side map + list */}
       <div className="md:grid md:grid-cols-2 md:gap-4 md:px-4 md:mt-3">
         <div>
-          {/* Map Placeholder */}
-          <div className="mx-4 md:mx-0 mt-3 md:mt-0 h-40 md:h-full md:min-h-[300px] bg-muted rounded-xl flex items-center justify-center text-muted-foreground text-sm">
-            🗺️ Map View
-          </div>
+          <div
+            ref={mapRef}
+            className="mx-4 md:mx-0 mt-3 md:mt-0 rounded-xl overflow-hidden"
+            style={{ height: "280px" }}
+          />
         </div>
 
         <div>
-          {/* Search */}
           <div className="mx-4 md:mx-0 mt-3 md:mt-0 flex items-center gap-2">
             <div className="flex-1 flex items-center gap-2 border border-border rounded-xl px-3 py-2.5 bg-card">
               <MapPin className="w-4 h-4 text-muted-foreground" />
@@ -36,7 +88,6 @@ const NearbyPage = () => {
             </button>
           </div>
 
-          {/* AI Tip */}
           <div className="mx-4 md:mx-0 mt-4 bg-secondary/10 border border-secondary/20 rounded-xl p-3">
             <div className="flex items-start gap-2">
               <Zap className="w-5 h-5 text-secondary flex-shrink-0 mt-0.5" />
@@ -49,7 +100,6 @@ const NearbyPage = () => {
             </div>
           </div>
 
-          {/* Nearby Locations */}
           <div className="px-4 md:px-0 mt-5">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-bold text-foreground">Nearby Locations</h2>
@@ -69,13 +119,13 @@ const NearbyPage = () => {
                     <div className="text-right">
                       <span className="text-sm font-bold text-primary">{loc.dist}</span>
                       <div className="flex items-center gap-0.5 mt-0.5">
-                        <Star className="w-3 h-3 text-gold" />
+                        <Star className="w-3 h-3 text-yellow-500" />
                         <span className="text-xs text-foreground">{loc.rating}</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                    <span className={loc.status === "Closing Soon" ? "text-warning font-medium" : "text-foreground"}>{loc.status}</span>
+                    <span className={loc.status === "Closing Soon" ? "text-amber-500 font-medium" : "text-foreground"}>{loc.status}</span>
                     <span>|</span>
                     <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" /> Delivery: {loc.time}</span>
                   </div>

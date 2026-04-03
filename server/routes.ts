@@ -1,9 +1,18 @@
 import { Router, Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { z } from "zod";
-import { getRecommendations, getOrderETA, getKitchenSummary, getAdminInsights } from "./ai";
+import { getRecommendations, getOrderETA, getKitchenSummary, getAdminInsights, searchMenu } from "./ai";
 import { io } from "./index";
+
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many AI requests, please try again in a minute." },
+});
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "mrwus-secret-key-change-in-production";
@@ -238,7 +247,7 @@ router.patch("/rider/orders/:id/status", auth, requireRole("rider"), async (req:
 
 // ─── AI ──────────────────────────────────────────────────────────────────────
 
-router.get("/ai/recommendations", async (req: AuthRequest, res) => {
+router.get("/ai/recommendations", aiLimiter, async (req: AuthRequest, res) => {
   try {
     const menuItems = await storage.getMenuItems();
     const recentOrders = req.headers.authorization
@@ -273,7 +282,7 @@ router.get("/ai/recommendations", async (req: AuthRequest, res) => {
   }
 });
 
-router.get("/ai/eta/:orderId", auth, async (req: AuthRequest, res) => {
+router.get("/ai/eta/:orderId", aiLimiter, auth, async (req: AuthRequest, res) => {
   try {
     const order = await storage.getOrderById(Number(req.params.orderId));
     if (!order) return res.status(404).json({ error: "Order not found" });
@@ -288,7 +297,7 @@ router.get("/ai/eta/:orderId", auth, async (req: AuthRequest, res) => {
   }
 });
 
-router.get("/ai/kitchen-summary", auth, requireRole("kitchen"), async (_req, res) => {
+router.get("/ai/kitchen-summary", aiLimiter, auth, requireRole("kitchen"), async (_req, res) => {
   try {
     const allOrders = await storage.getAllOrders();
     const simplified = allOrders.map(o => ({
@@ -332,7 +341,31 @@ router.delete("/admin/menu-items/:id", auth, requireRole("admin"), async (req, r
   res.sendStatus(204);
 });
 
-router.post("/ai/admin-insights", auth, requireRole("admin"), async (req, res) => {
+router.post("/ai/search", aiLimiter, async (req: AuthRequest, res) => {
+  try {
+    const { query } = req.body;
+    if (!query || typeof query !== "string" || query.trim().length === 0) {
+      return res.status(400).json({ error: "query is required" });
+    }
+    const items = await storage.getMenuItems();
+    const simplified = items.map(m => ({
+      id: m.id,
+      name: m.name,
+      category: m.category,
+      price: m.price,
+      description: m.description,
+      tags: m.tags ? JSON.parse(m.tags) : [],
+    }));
+    const result = await searchMenu(query.trim(), simplified);
+    const matchedItems = items.filter(i => result.itemIds.includes(i.id));
+    res.json({ message: result.message, items: matchedItems });
+  } catch (err) {
+    console.error("AI search error:", err);
+    res.status(500).json({ error: "Search unavailable, please try again." });
+  }
+});
+
+router.post("/ai/admin-insights", aiLimiter, auth, requireRole("admin"), async (req, res) => {
   try {
     const days = Number(req.body.days) || 30;
     const stats = await storage.getAdminStats(days);

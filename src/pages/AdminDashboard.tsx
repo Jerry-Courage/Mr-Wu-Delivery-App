@@ -53,7 +53,7 @@ type MenuItem = {
   description: string;
   price: string;
   category: string;
-  available: boolean;
+  isAvailable: number;
   imageUrl: string;
 };
 
@@ -470,7 +470,7 @@ export default function AdminDashboard() {
                 <Card key={item.id} className="bg-neutral-900 border-white/5 overflow-hidden group">
                   <div className="aspect-video relative overflow-hidden">
                     <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                    {!item.available && (
+                    {!item.isAvailable && (
                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                         <span className="px-3 py-1 rounded-full bg-red-500 text-[10px] font-bold uppercase tracking-wider">Unavailable</span>
                       </div>
