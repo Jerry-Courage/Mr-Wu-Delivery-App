@@ -100,6 +100,13 @@ router.get("/auth/me", auth, async (req: AuthRequest, res) => {
   res.json({ id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone, address: user.address });
 });
 
+router.patch("/auth/profile", auth, async (req: AuthRequest, res) => {
+  const { name, phone, address } = req.body;
+  const user = await storage.updateUserProfile(req.user!.id, { name, phone, address });
+  if (!user) return res.status(404).json({ error: "User not found" });
+  res.json({ id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone, address: user.address });
+});
+
 // ─── Menu ────────────────────────────────────────────────────────────────────
 
 router.get("/menu", async (_req, res) => {
@@ -417,9 +424,25 @@ router.post("/ai/search", aiLimiter, async (req: AuthRequest, res) => {
       description: m.description,
       tags: m.tags ? JSON.parse(m.tags) : [],
     }));
-    const result = await searchMenu(query.trim(), simplified);
-    const matchedItems = items.filter(i => result.itemIds.includes(i.id));
-    res.json({ message: result.message, items: matchedItems });
+    try {
+      const result = await searchMenu(query.trim(), simplified);
+      const matchedItems = items.filter(i => result.itemIds.includes(i.id));
+      res.json({ message: result.message, items: matchedItems });
+    } catch {
+      // Fallback: simple text search when AI is unavailable
+      const q = query.trim().toLowerCase();
+      const matchedItems = items.filter(i =>
+        i.name.toLowerCase().includes(q) ||
+        (i.description && i.description.toLowerCase().includes(q)) ||
+        (i.category && i.category.toLowerCase().includes(q))
+      );
+      res.json({
+        message: matchedItems.length > 0
+          ? `Found ${matchedItems.length} item(s) matching "${query}".`
+          : `No items found for "${query}". Try browsing the full menu!`,
+        items: matchedItems,
+      });
+    }
   } catch (err) {
     console.error("AI search error:", err);
     res.status(500).json({ error: "Search unavailable, please try again." });
@@ -430,11 +453,17 @@ router.post("/ai/admin-insights", aiLimiter, auth, requireRole("admin"), async (
   try {
     const days = Number(req.body.days) || 30;
     const stats = await storage.getAdminStats(days);
-    const insights = await getAdminInsights(stats);
-    res.json({ insights });
+    try {
+      const insights = await getAdminInsights(stats);
+      res.json({ insights });
+    } catch {
+      res.json({
+        insights: `Over the past ${days} days, the restaurant recorded ${stats.totalOrders} orders totalling $${stats.totalRevenue.toFixed(2)}. ${stats.popularItems.length > 0 ? `Top seller: ${stats.popularItems[0].name} (${stats.popularItems[0].count} sold).` : ""} Focus on maintaining quality and delivery speed to sustain growth.`
+      });
+    }
   } catch (err) {
     console.error("Admin insights error:", err);
-    res.status(500).json({ error: "AI service unavailable" });
+    res.status(500).json({ error: "Unable to load insights" });
   }
 });
 

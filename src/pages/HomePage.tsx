@@ -1,7 +1,6 @@
 import { Search, Bell, ChevronRight, Plus, Zap, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { menuItems as localMenuItems } from "@/data/menuData";
 import { api } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -24,27 +23,76 @@ interface AIRecommendation {
   confidence: number;
 }
 
+interface DBMenuItem {
+  id: number;
+  name: string;
+  description: string;
+  price: string;
+  imageUrl: string | null;
+  category: string;
+  calories: number | null;
+  tags: string | null;
+  rating: string | null;
+  reviews: number | null;
+  isTop: number | null;
+}
+
+interface Order {
+  id: number;
+  status: string;
+  total: string;
+  createdAt: string;
+  items: { name: string; quantity: number }[];
+}
+
 const HomePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { addItem } = useCart();
   const { toast } = useToast();
 
+  const { data: dbItems = [] } = useQuery<DBMenuItem[]>({
+    queryKey: ["/api/menu"],
+    queryFn: () => api.get("/menu"),
+    staleTime: 60000,
+  });
+
   const { data: aiRecs, isLoading: aiLoading } = useQuery<AIRecommendation[]>({
     queryKey: ["/api/ai/recommendations"],
     queryFn: () => api.get("/ai/recommendations"),
     staleTime: 5 * 60 * 1000,
     retry: 1,
+    enabled: dbItems.length > 0,
   });
 
-  const recommendedItems = aiRecs
+  const { data: myOrders = [] } = useQuery<Order[]>({
+    queryKey: ["/api/orders/my"],
+    queryFn: () => api.get("/orders/my"),
+    enabled: !!user,
+    staleTime: 60000,
+  });
+
+  const lastOrder = myOrders[0] ?? null;
+
+  const menuItems = dbItems.map(item => ({
+    id: String(item.id),
+    name: item.name,
+    description: item.description,
+    price: parseFloat(item.price),
+    image: item.imageUrl || "",
+    calories: item.calories ?? undefined,
+    tags: item.tags ? JSON.parse(item.tags) : undefined,
+    category: item.category,
+    rating: item.rating ? parseFloat(item.rating) : undefined,
+    isTop: item.isTop === 1,
+  }));
+
+  const recommendedItems = aiRecs && menuItems.length > 0
     ? aiRecs
-        .map(rec => localMenuItems.find(m => m.id === rec.id || m.name === rec.name))
+        .map(rec => menuItems.find(m => String(m.id) === String(rec.id) || m.name === rec.name))
         .filter((m): m is NonNullable<typeof m> => !!m)
         .map((m, i) => ({ ...m, aiReason: aiRecs[i]?.reason, aiConfidence: aiRecs[i]?.confidence }))
-    : localMenuItems.slice(0, 4);
-
-  const reorderItem = localMenuItems[0];
+    : menuItems.slice(0, 4);
 
   return (
     <div className="pb-4">
@@ -125,7 +173,11 @@ const HomePage = () => {
                       className="w-full text-left"
                     >
                       <div className="relative rounded-xl overflow-hidden h-32">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" loading="lazy" />
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" loading="lazy" />
+                        ) : (
+                          <div className="w-full h-full bg-muted flex items-center justify-center text-4xl">🍜</div>
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
                         {item.isTop && (
                           <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-md">Most Popular</span>
@@ -190,15 +242,26 @@ const HomePage = () => {
               <button onClick={() => navigate("/orders")} className="text-sm text-muted-foreground">History</button>
             </div>
             {user ? (
-              <div className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
-                <img src={reorderItem.image} alt={reorderItem.name} className="w-14 h-14 rounded-lg object-cover" loading="lazy" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">Mr Wu's - Downtown</p>
-                  <p className="text-xs text-muted-foreground truncate">Beef Broccoli, Veggie R...</p>
-                  <p className="text-xs text-primary mt-0.5">Last Tuesday</p>
+              lastOrder ? (
+                <div className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
+                  <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center text-2xl flex-shrink-0">🥡</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">Mr Wu's — Order #{lastOrder.id}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {lastOrder.items?.map(i => `${i.name}${i.quantity > 1 ? ` x${i.quantity}` : ""}`).join(", ") || "Previous order"}
+                    </p>
+                    <p className="text-xs text-primary mt-0.5">
+                      {new Date(lastOrder.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })} • ${parseFloat(lastOrder.total).toFixed(2)}
+                    </p>
+                  </div>
+                  <button onClick={() => navigate("/orders")} className="border border-primary text-primary text-xs font-bold px-3 py-1.5 rounded-lg flex-shrink-0">Reorder</button>
                 </div>
-                <button onClick={() => navigate("/orders")} className="border border-primary text-primary text-xs font-bold px-3 py-1.5 rounded-lg">Reorder</button>
-              </div>
+              ) : (
+                <div className="bg-card border border-border rounded-xl p-4 text-center">
+                  <p className="text-sm text-muted-foreground mb-2">No orders yet — start your first one!</p>
+                  <button onClick={() => navigate("/menu")} className="text-primary font-semibold text-sm">Browse Menu</button>
+                </div>
+              )
             ) : (
               <div className="bg-card border border-border rounded-xl p-4 text-center">
                 <p className="text-sm text-muted-foreground mb-2">Sign in to see your order history</p>

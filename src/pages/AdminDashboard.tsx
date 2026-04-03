@@ -11,13 +11,13 @@ import {
   DollarSign,
   ShoppingBag,
   Users,
-  ChevronRight,
   Loader2,
-  AlertCircle,
   UserPlus,
   ShieldCheck,
   Mail,
-  KeyRound
+  KeyRound,
+  X,
+  ImageIcon
 } from "lucide-react";
 import { 
   AreaChart, 
@@ -57,10 +57,155 @@ type MenuItem = {
   imageUrl: string;
 };
 
+type DishForm = {
+  name: string;
+  description: string;
+  price: string;
+  category: string;
+  imageUrl: string;
+  isAvailable: boolean;
+};
+
+const EMPTY_DISH_FORM: DishForm = {
+  name: "",
+  description: "",
+  price: "",
+  category: "Mains",
+  imageUrl: "",
+  isAvailable: true,
+};
+
+const CATEGORIES = ["Starters", "Mains", "Noodles", "Rice", "Combos", "Soups", "Desserts", "Drinks"];
+
+function DishModal({
+  open,
+  title,
+  form,
+  onChange,
+  onSave,
+  onClose,
+  saving,
+}: {
+  open: boolean;
+  title: string;
+  form: DishForm;
+  onChange: (f: DishForm) => void;
+  onSave: () => void;
+  onClose: () => void;
+  saving: boolean;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-neutral-900 border border-white/10 rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-white">{title}</h3>
+          <button onClick={onClose} className="text-neutral-500 hover:text-white transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-neutral-500 uppercase tracking-widest block mb-1.5">Dish Name *</label>
+            <input
+              value={form.name}
+              onChange={e => onChange({ ...form, name: e.target.value })}
+              placeholder="e.g. General Tso's Chicken"
+              className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-orange-500 focus:outline-none transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-neutral-500 uppercase tracking-widest block mb-1.5">Description</label>
+            <textarea
+              value={form.description}
+              onChange={e => onChange({ ...form, description: e.target.value })}
+              placeholder="Brief description of the dish..."
+              rows={3}
+              className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-orange-500 focus:outline-none transition-colors resize-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-neutral-500 uppercase tracking-widest block mb-1.5">Price ($) *</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.price}
+                onChange={e => onChange({ ...form, price: e.target.value })}
+                placeholder="0.00"
+                className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-orange-500 focus:outline-none transition-colors"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-neutral-500 uppercase tracking-widest block mb-1.5">Category *</label>
+              <select
+                value={form.category}
+                onChange={e => onChange({ ...form, category: e.target.value })}
+                className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-colors"
+              >
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-neutral-500 uppercase tracking-widest block mb-1.5">
+              <ImageIcon size={12} className="inline mr-1" />
+              Image URL
+            </label>
+            <input
+              value={form.imageUrl}
+              onChange={e => onChange({ ...form, imageUrl: e.target.value })}
+              placeholder="/assets/my-dish.jpg or https://..."
+              className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-orange-500 focus:outline-none transition-colors"
+            />
+            {form.imageUrl && (
+              <img src={form.imageUrl} alt="Preview" className="mt-2 w-full h-32 object-cover rounded-xl opacity-80" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => onChange({ ...form, isAvailable: !form.isAvailable })}
+              className={`w-10 h-6 rounded-full transition-colors flex items-center ${form.isAvailable ? "bg-orange-500 justify-end" : "bg-neutral-700 justify-start"}`}
+            >
+              <div className="w-5 h-5 bg-white rounded-full mx-0.5 shadow" />
+            </button>
+            <span className="text-sm text-white">{form.isAvailable ? "Available on menu" : "Hidden from menu"}</span>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <Button variant="ghost" onClick={onClose} className="flex-1 h-11 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5">
+            Cancel
+          </Button>
+          <Button
+            onClick={onSave}
+            disabled={saving || !form.name.trim() || !form.price}
+            className="flex-1 h-11 rounded-xl bg-orange-600 hover:bg-orange-700 font-bold"
+          >
+            {saving ? <Loader2 className="animate-spin" size={18} /> : title}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<"overview" | "menu" | "ai" | "staff">("overview");
   const [isAddingStaff, setIsAddingStaff] = useState(false);
   const [newStaff, setNewStaff] = useState({ name: "", email: "", password: "" });
+
+  const [showAddDish, setShowAddDish] = useState(false);
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [dishForm, setDishForm] = useState<DishForm>(EMPTY_DISH_FORM);
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -95,11 +240,7 @@ export default function AdminDashboard() {
       setNewStaff({ name: "", email: "", password: "" });
     },
     onError: (err: any) => {
-      toast({ 
-        title: "Failed to create staff", 
-        description: err.message,
-        variant: "destructive" 
-      });
+      toast({ title: "Failed to create staff", description: err.message, variant: "destructive" });
     }
   });
 
@@ -115,9 +256,65 @@ export default function AdminDashboard() {
     mutationFn: (id: number) => api.delete(`/admin/menu-items/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "menu"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/menu"] });
       toast({ title: "Item deleted" });
     }
   });
+
+  const createDishMutation = useMutation({
+    mutationFn: (data: Omit<DishForm, "isAvailable"> & { isAvailable: number }) =>
+      api.post("/admin/menu-items", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "menu"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/menu"] });
+      toast({ title: "Dish added to menu" });
+      setShowAddDish(false);
+      setDishForm(EMPTY_DISH_FORM);
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to add dish", description: err.message, variant: "destructive" });
+    }
+  });
+
+  const updateDishMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Omit<DishForm, "isAvailable"> & { isAvailable: number } }) =>
+      api.patch(`/admin/menu-items/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "menu"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/menu"] });
+      toast({ title: "Dish updated" });
+      setEditingItem(null);
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to update dish", description: err.message, variant: "destructive" });
+    }
+  });
+
+  const openAddDish = () => {
+    setDishForm(EMPTY_DISH_FORM);
+    setShowAddDish(true);
+  };
+
+  const openEditDish = (item: MenuItem) => {
+    setDishForm({
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      category: item.category,
+      imageUrl: item.imageUrl || "",
+      isAvailable: item.isAvailable === 1,
+    });
+    setEditingItem(item);
+  };
+
+  const handleCreateDish = () => {
+    createDishMutation.mutate({ ...dishForm, isAvailable: dishForm.isAvailable ? 1 : 0 });
+  };
+
+  const handleUpdateDish = () => {
+    if (!editingItem) return;
+    updateDishMutation.mutate({ id: editingItem.id, data: { ...dishForm, isAvailable: dishForm.isAvailable ? 1 : 0 } });
+  };
 
   if (statsLoading || menuLoading) {
     return (
@@ -130,6 +327,28 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex pb-20 lg:pb-0 lg:pl-64">
+      {/* Add Dish Modal */}
+      <DishModal
+        open={showAddDish}
+        title="Add New Dish"
+        form={dishForm}
+        onChange={setDishForm}
+        onSave={handleCreateDish}
+        onClose={() => setShowAddDish(false)}
+        saving={createDishMutation.isPending}
+      />
+
+      {/* Edit Dish Modal */}
+      <DishModal
+        open={!!editingItem}
+        title="Save Changes"
+        form={dishForm}
+        onChange={setDishForm}
+        onSave={handleUpdateDish}
+        onClose={() => setEditingItem(null)}
+        saving={updateDishMutation.isPending}
+      />
+
       {/* Desktop Sidebar */}
       <aside className="fixed left-0 top-0 bottom-0 w-64 bg-neutral-900 border-r border-white/5 hidden lg:flex flex-col p-6 space-y-8 z-50">
         <div className="flex items-center gap-3">
@@ -199,7 +418,10 @@ export default function AdminDashboard() {
             </p>
           </div>
           {activeTab === "menu" && (
-            <Button className="h-12 px-6 rounded-2xl bg-orange-600 hover:bg-orange-700 gap-2">
+            <Button
+              onClick={openAddDish}
+              className="h-12 px-6 rounded-2xl bg-orange-600 hover:bg-orange-700 gap-2"
+            >
               <Plus size={20} /> Add New Dish
             </Button>
           )}
@@ -219,7 +441,7 @@ export default function AdminDashboard() {
                 {[
                   { label: "Total Revenue", value: `$${stats?.totalRevenue.toFixed(2)}`, icon: DollarSign, color: "text-emerald-400", trend: "+12.5%" },
                   { label: "Total Orders", value: stats?.totalOrders, icon: ShoppingBag, color: "text-blue-400", trend: "+8.2%" },
-                  { label: "Active Customers", value: stats?.activeUsers || 0, icon: Users, color: "text-purple-400", trend: "+5.1%" },
+                  { label: "Active Customers", value: stats?.activeUsers ?? 0, icon: Users, color: "text-purple-400", trend: "+5.1%" },
                 ].map((stat, i) => (
                   <Card key={i} className="bg-neutral-900 border-white/5 p-6 space-y-4">
                     <div className="flex items-center justify-between">
@@ -351,7 +573,7 @@ export default function AdminDashboard() {
                             <UserPlus size={16} /> New Staff Account
                           </h4>
                           <button onClick={() => setIsAddingStaff(false)} className="text-neutral-500 hover:text-white transition-colors">
-                             <Plus className="rotate-45" size={20} />
+                             <X size={20} />
                           </button>
                         </div>
                         
@@ -469,7 +691,11 @@ export default function AdminDashboard() {
               {menuItems?.map((item) => (
                 <Card key={item.id} className="bg-neutral-900 border-white/5 overflow-hidden group">
                   <div className="aspect-video relative overflow-hidden">
-                    <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    ) : (
+                      <div className="w-full h-full bg-neutral-800 flex items-center justify-center text-4xl">🍜</div>
+                    )}
                     {!item.isAvailable && (
                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                         <span className="px-3 py-1 rounded-full bg-red-500 text-[10px] font-bold uppercase tracking-wider">Unavailable</span>
@@ -486,7 +712,11 @@ export default function AdminDashboard() {
                     </div>
                     <p className="text-sm text-neutral-400 line-clamp-2">{item.description}</p>
                     <div className="flex gap-2 pt-2">
-                      <Button variant="outline" className="flex-1 bg-white/5 border-white/10 hover:bg-white/10 gap-2 h-10 rounded-xl">
+                      <Button
+                        variant="outline"
+                        onClick={() => openEditDish(item)}
+                        className="flex-1 bg-white/5 border-white/10 hover:bg-white/10 gap-2 h-10 rounded-xl"
+                      >
                         <Pencil size={14} /> Edit
                       </Button>
                       <Button 
@@ -501,6 +731,14 @@ export default function AdminDashboard() {
                   </div>
                 </Card>
               ))}
+
+              {(!menuItems || menuItems.length === 0) && (
+                <div className="col-span-full py-20 text-center space-y-4">
+                  <UtensilsCrossed className="text-neutral-700 mx-auto" size={48} />
+                  <h4 className="font-bold text-neutral-400">No menu items yet</h4>
+                  <p className="text-sm text-neutral-600">Add your first dish to get started.</p>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -552,19 +790,12 @@ export default function AdminDashboard() {
                   <Button 
                     variant="link" 
                     onClick={() => getInsights()} 
-                    className="text-orange-500 hover:text-orange-400 p-0 h-auto font-semibold gap-2"
+                    className="text-neutral-500 hover:text-white"
                   >
-                    Refresh Analysis <ChevronRight size={16} />
+                    Regenerate Analysis
                   </Button>
                 </Card>
               )}
-
-              <div className="flex items-start gap-4 p-6 bg-blue-500/5 rounded-2xl border border-blue-500/20">
-                <AlertCircle className="text-blue-400 shrink-0" size={24} />
-                <p className="text-sm text-blue-200/70">
-                  Our AI models analyze historical order patterns, temporal demand fluctuations, and popular item correlations.
-                </p>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>

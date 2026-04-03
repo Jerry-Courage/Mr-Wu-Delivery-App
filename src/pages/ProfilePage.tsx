@@ -1,12 +1,47 @@
-import { ChevronRight, MapPin, CreditCard, Heart, AlertTriangle, Bell, Languages, Shield, HelpCircle, FileText, LogOut, Gift, Zap, Moon, Sun, User } from "lucide-react";
+import { useState } from "react";
+import { ChevronRight, MapPin, CreditCard, Heart, AlertTriangle, Bell, Languages, Shield, HelpCircle, FileText, LogOut, Gift, Zap, Moon, Sun, User, X, Save, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+
+type ProfileField = { name: string; phone: string; address: string };
 
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { isDark, toggle } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
+  const { toast } = useToast();
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState<ProfileField>({ name: "", phone: "", address: "" });
+
+  const openEdit = () => {
+    setEditForm({
+      name: user?.name || "",
+      phone: user?.phone || "",
+      address: user?.address || "",
+    });
+    setEditOpen(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateUser({
+        name: editForm.name.trim() || undefined,
+        phone: editForm.phone.trim() || undefined,
+        address: editForm.address.trim() || undefined,
+      });
+      toast({ title: "Profile updated" });
+      setEditOpen(false);
+    } catch (err: any) {
+      toast({ title: "Failed to save", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -14,10 +49,10 @@ const ProfilePage = () => {
   };
 
   const accountItems = [
-    { icon: MapPin, label: "Saved Addresses", desc: user?.address || "Add a delivery address" },
-    { icon: CreditCard, label: "Payment Methods", desc: "Visa ending in 4421" },
-    { icon: Heart, label: "Favorites", desc: "12 dishes saved" },
-    { icon: AlertTriangle, label: "Allergies & Preferences", desc: "Peanuts, Shellfish, Glu...", badge: "Action Required" },
+    { icon: MapPin, label: "Saved Addresses", desc: user?.address || "Add a delivery address", action: openEdit },
+    { icon: CreditCard, label: "Payment Methods", desc: "Visa ending in 4421", action: () => {} },
+    { icon: Heart, label: "Favorites", desc: "12 dishes saved", action: () => {} },
+    { icon: AlertTriangle, label: "Allergies & Preferences", desc: "Peanuts, Shellfish, Glu...", badge: "Action Required", action: () => {} },
   ];
 
   const settingsItems = [
@@ -55,12 +90,76 @@ const ProfilePage = () => {
 
   return (
     <div className="pb-4">
+      {/* Edit Profile Modal */}
+      {editOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setEditOpen(false)} />
+          <div className="relative w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-foreground">Edit Profile</h3>
+              <button onClick={() => setEditOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Full Name</label>
+                <input
+                  value={editForm.name}
+                  onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="Your full name"
+                  className="w-full border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Phone Number</label>
+                <input
+                  value={editForm.phone}
+                  onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
+                  placeholder="+1 (555) 000-0000"
+                  type="tel"
+                  className="w-full border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Delivery Address</label>
+                <textarea
+                  value={editForm.address}
+                  onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))}
+                  placeholder="123 Main St, New York, NY 10001"
+                  rows={2}
+                  className="w-full border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditOpen(false)}
+                className="flex-1 py-2.5 border border-border rounded-xl text-sm font-semibold text-foreground"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="flex items-center justify-between px-4 py-3">
         <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
           <Zap className="w-5 h-5 text-primary-foreground" />
         </div>
         <h1 className="text-lg font-bold text-foreground">My Profile</h1>
-        <div className="w-9" />
+        <button onClick={openEdit} className="text-primary text-sm font-semibold">Edit</button>
       </header>
 
       <div className="md:grid md:grid-cols-2 md:gap-6 md:px-4">
@@ -127,7 +226,11 @@ const ProfilePage = () => {
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Account & Wallet</h3>
             <div className="bg-card rounded-xl border border-border overflow-hidden">
               {accountItems.map((item, i) => (
-                <button key={item.label} className={`w-full flex items-center gap-3 px-4 py-3 text-left ${i < accountItems.length - 1 ? "border-b border-border" : ""}`}>
+                <button
+                  key={item.label}
+                  onClick={item.action}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-left ${i < accountItems.length - 1 ? "border-b border-border" : ""}`}
+                >
                   <item.icon className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                   <div className="flex-1">
                     <span className="text-sm font-medium text-foreground">{item.label}</span>

@@ -1,11 +1,44 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, ShoppingCart, Star, Zap, Leaf, AlertTriangle } from "lucide-react";
-import { menuItems } from "@/data/menuData";
+import { useQuery } from "@tanstack/react-query";
 import { useCart } from "@/context/CartContext";
+import { api } from "@/lib/api";
+import type { MenuItem as CartMenuItem } from "@/data/menuData";
 import springRolls from "@/assets/spring-rolls.jpg";
 import sichuanNoodles from "@/assets/sichuan-noodles.jpg";
 import ThemeToggle from "@/components/ThemeToggle";
+
+interface DBMenuItem {
+  id: number;
+  name: string;
+  description: string;
+  price: string;
+  imageUrl: string | null;
+  category: string;
+  calories: number | null;
+  tags: string | null;
+  rating: string | null;
+  reviews: number | null;
+  isTop: number | null;
+  isAvailable: number | null;
+}
+
+function dbToCart(item: DBMenuItem): CartMenuItem {
+  return {
+    id: String(item.id),
+    name: item.name,
+    description: item.description,
+    price: parseFloat(item.price),
+    image: item.imageUrl || "",
+    calories: item.calories ?? undefined,
+    tags: item.tags ? JSON.parse(item.tags) : undefined,
+    category: item.category,
+    rating: item.rating ? parseFloat(item.rating) : undefined,
+    reviews: item.reviews ?? undefined,
+    isTop: item.isTop === 1,
+  };
+}
 
 const sizes = [
   { label: "Regular Portion", price: 0 },
@@ -24,7 +57,6 @@ const ItemDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addItem, totalItems } = useCart();
-  const item = menuItems.find(i => i.id === id);
 
   const [selectedSize, setSelectedSize] = useState(0);
   const [spiceLevel, setSpiceLevel] = useState(2);
@@ -32,8 +64,41 @@ const ItemDetailPage = () => {
   const [instructions, setInstructions] = useState("");
   const [quantity, setQuantity] = useState(1);
 
-  if (!item) return <div className="p-8 text-center text-muted-foreground">Item not found</div>;
+  const { data: dbItems = [], isLoading } = useQuery<DBMenuItem[]>({
+    queryKey: ["/api/menu"],
+    queryFn: () => api.get("/menu"),
+    staleTime: 60000,
+  });
 
+  if (isLoading) {
+    return (
+      <div className="pb-24">
+        <div className="relative">
+          <div className="w-full h-56 md:h-80 bg-muted animate-pulse" />
+          <button onClick={() => navigate(-1)} className="absolute top-4 left-4 w-9 h-9 bg-card/80 backdrop-blur rounded-full flex items-center justify-center">
+            <ChevronLeft className="w-5 h-5 text-foreground" />
+          </button>
+        </div>
+        <div className="px-4 pt-4 space-y-3">
+          <div className="h-6 bg-muted animate-pulse rounded w-2/3" />
+          <div className="h-4 bg-muted animate-pulse rounded w-full" />
+          <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
+        </div>
+      </div>
+    );
+  }
+
+  const dbItem = dbItems.find(i => String(i.id) === id);
+  if (!dbItem) {
+    return (
+      <div className="p-8 text-center">
+        <button onClick={() => navigate(-1)} className="text-primary font-semibold mb-4 block">← Back</button>
+        <p className="text-muted-foreground">Item not found</p>
+      </div>
+    );
+  }
+
+  const item = dbToCart(dbItem);
   const extrasCost = selectedExtras.reduce((sum, i) => sum + extras[i].price, 0);
   const totalPrice = (item.price + sizes[selectedSize].price + extrasCost) * quantity;
 
@@ -47,7 +112,11 @@ const ItemDetailPage = () => {
       {/* Image */}
       <div className="relative md:flex md:gap-6 md:p-4">
         <div className="relative md:w-1/2 md:rounded-2xl md:overflow-hidden">
-          <img src={item.image} alt={item.name} className="w-full h-56 md:h-80 object-cover md:rounded-2xl" />
+          {item.image ? (
+            <img src={item.image} alt={item.name} className="w-full h-56 md:h-80 object-cover md:rounded-2xl" />
+          ) : (
+            <div className="w-full h-56 md:h-80 bg-muted flex items-center justify-center text-6xl md:rounded-2xl">🍜</div>
+          )}
           <button onClick={() => navigate(-1)} className="absolute top-4 left-4 w-9 h-9 bg-card/80 backdrop-blur rounded-full flex items-center justify-center">
             <ChevronLeft className="w-5 h-5 text-foreground" />
           </button>
@@ -215,6 +284,26 @@ const ItemDetailPage = () => {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Quantity */}
+      <div className="px-4 mt-6 flex items-center gap-4">
+        <h3 className="font-bold text-foreground">Quantity</h3>
+        <div className="flex items-center gap-3 bg-muted rounded-xl p-1">
+          <button
+            onClick={() => setQuantity(q => Math.max(1, q - 1))}
+            className="w-8 h-8 bg-card rounded-lg flex items-center justify-center font-bold text-foreground"
+          >
+            −
+          </button>
+          <span className="w-6 text-center font-bold text-foreground">{quantity}</span>
+          <button
+            onClick={() => setQuantity(q => q + 1)}
+            className="w-8 h-8 bg-primary text-primary-foreground rounded-lg flex items-center justify-center font-bold"
+          >
+            +
+          </button>
         </div>
       </div>
 

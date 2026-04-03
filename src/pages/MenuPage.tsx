@@ -1,9 +1,42 @@
 import { useState } from "react";
 import { Plus, SlidersHorizontal, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import AppHeader from "@/components/layout/AppHeader";
-import { menuItems, categories } from "@/data/menuData";
 import { useCart } from "@/context/CartContext";
+import { api } from "@/lib/api";
+import type { MenuItem as CartMenuItem } from "@/data/menuData";
+
+interface DBMenuItem {
+  id: number;
+  name: string;
+  description: string;
+  price: string;
+  imageUrl: string | null;
+  category: string;
+  calories: number | null;
+  tags: string | null;
+  rating: string | null;
+  reviews: number | null;
+  isTop: number | null;
+  isAvailable: number | null;
+}
+
+function dbToCart(item: DBMenuItem): CartMenuItem {
+  return {
+    id: String(item.id),
+    name: item.name,
+    description: item.description,
+    price: parseFloat(item.price),
+    image: item.imageUrl || "",
+    calories: item.calories ?? undefined,
+    tags: item.tags ? JSON.parse(item.tags) : undefined,
+    category: item.category,
+    rating: item.rating ? parseFloat(item.rating) : undefined,
+    reviews: item.reviews ?? undefined,
+    isTop: item.isTop === 1,
+  };
+}
 
 const MenuPage = () => {
   const navigate = useNavigate();
@@ -11,14 +44,41 @@ const MenuPage = () => {
   const [activeCategory, setActiveCategory] = useState("All");
   const [aiSuggestions, setAiSuggestions] = useState(true);
 
+  const { data: dbItems = [], isLoading } = useQuery<DBMenuItem[]>({
+    queryKey: ["/api/menu"],
+    queryFn: () => api.get("/menu"),
+    staleTime: 60000,
+  });
+
+  const menuItems = dbItems.map(dbToCart);
+  const categories = ["All", ...Array.from(new Set(dbItems.map(i => i.category)))];
   const filtered = activeCategory === "All" ? menuItems : menuItems.filter(i => i.category === activeCategory);
-  const aiPick = menuItems.find(i => i.aiMatch);
+  const aiPick = menuItems.find(i => i.isTop);
+
+  if (isLoading) {
+    return (
+      <div className="pb-4">
+        <AppHeader title="Menu - Midtown East" showBack />
+        <div className="px-4 mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[1,2,3,4,5,6].map(i => (
+            <div key={i} className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
+              <div className="w-20 h-20 rounded-lg bg-muted animate-pulse flex-shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
+                <div className="h-3 bg-muted animate-pulse rounded w-full" />
+                <div className="h-3 bg-muted animate-pulse rounded w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-4">
       <AppHeader title="Menu - Midtown East" showBack />
 
-      {/* Category Tabs */}
       <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
         {categories.map(cat => (
           <button
@@ -33,7 +93,6 @@ const MenuPage = () => {
         ))}
       </div>
 
-      {/* Filters */}
       <div className="flex items-center justify-between px-4 pb-3">
         <div className="flex gap-2">
           <button className="flex items-center gap-1 border border-border rounded-lg px-3 py-1.5 text-xs font-medium text-foreground">
@@ -52,34 +111,36 @@ const MenuPage = () => {
         </label>
       </div>
 
-      {/* AI Pick */}
       {aiSuggestions && aiPick && (
         <div className="mx-4 mb-4">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-4 h-4 text-secondary" />
-            <h3 className="text-sm font-bold text-foreground">AI Picks for You</h3>
+            <h3 className="text-sm font-bold text-foreground">Top Pick For You</h3>
           </div>
           <button
             onClick={() => navigate(`/item/${aiPick.id}`)}
             className="w-full flex items-center gap-3 bg-card border border-border rounded-xl p-3"
           >
-            <img src={aiPick.image} alt={aiPick.name} className="w-16 h-16 rounded-lg object-cover" loading="lazy" />
+            {aiPick.image && (
+              <img src={aiPick.image} alt={aiPick.name} className="w-16 h-16 rounded-lg object-cover" loading="lazy" />
+            )}
             <div className="flex-1 text-left">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-sm text-foreground">{aiPick.name}</span>
-                <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-md">{aiPick.aiMatch}% Match</span>
+                <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-md">Most Popular</span>
               </div>
-              <p className="text-xs text-muted-foreground italic mt-0.5">"Based on your love for crispy poultry and sweet hoisin sauce."</p>
+              <p className="text-xs text-muted-foreground italic mt-0.5">{aiPick.description?.slice(0, 60)}...</p>
             </div>
           </button>
         </div>
       )}
 
-      {/* Popular Items - responsive grid */}
       <div className="px-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold text-foreground">Popular Items</h3>
-          <button className="text-sm text-primary font-medium">View All</button>
+          <h3 className="font-bold text-foreground">
+            {activeCategory === "All" ? "All Items" : activeCategory}
+            <span className="text-muted-foreground font-normal text-sm ml-2">({filtered.length})</span>
+          </h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {filtered.map(item => (
@@ -89,9 +150,13 @@ const MenuPage = () => {
               className="w-full flex items-center gap-3 bg-card border border-border rounded-xl p-3 text-left"
             >
               <div className="relative flex-shrink-0">
-                <img src={item.image} alt={item.name} className="w-20 h-20 rounded-lg object-cover" loading="lazy" />
+                {item.image ? (
+                  <img src={item.image} alt={item.name} className="w-20 h-20 rounded-lg object-cover" loading="lazy" />
+                ) : (
+                  <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center text-2xl">🍜</div>
+                )}
                 {item.isTop && (
-                  <span className="absolute top-1 left-1 bg-gold text-gold-foreground text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">⭐ TOP</span>
+                  <span className="absolute top-1 left-1 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">⭐ TOP</span>
                 )}
               </div>
               <div className="flex-1 min-w-0">

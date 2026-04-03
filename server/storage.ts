@@ -64,6 +64,8 @@ export interface IStorage {
   updateMenuItemImage(id: number, imageUrl: string): Promise<MenuItem>;
   assignRider(orderId: number, riderId: number): Promise<Order>;
 
+  updateUserProfile(id: number, data: { name?: string; phone?: string; address?: string }): Promise<User | null>;
+
   // Admin Stats
   getAdminStats(days: number): Promise<{
     revenue: { date: string; amount: number }[];
@@ -272,6 +274,18 @@ export class Storage implements IStorage {
     return item;
   }
 
+  async updateUserProfile(id: number, data: { name?: string; phone?: string; address?: string }): Promise<User | null> {
+    const updates: Partial<typeof users.$inferInsert> = {};
+    if (data.name !== undefined) updates.name = data.name;
+    if (data.phone !== undefined) updates.phone = data.phone;
+    if (data.address !== undefined) updates.address = data.address;
+    if (Object.keys(updates).length === 0) {
+      return this.getUserById(id);
+    }
+    const [user] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
+    return user ?? null;
+  }
+
   async assignRider(orderId: number, riderId: number): Promise<Order> {
     const [order] = await db.update(orders)
       .set({ riderId, status: "assigned", updatedAt: new Date() })
@@ -286,6 +300,7 @@ export class Storage implements IStorage {
     popularItems: { name: string; count: number }[];
     totalRevenue: number;
     totalOrders: number;
+    activeUsers: number;
   }> {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
@@ -330,12 +345,15 @@ export class Storage implements IStorage {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
+    const allCustomers = await db.select().from(users).where(eq(users.role, "customer"));
+
     return {
       revenue,
       orders: orderData,
       popularItems,
       totalRevenue,
       totalOrders: recentOrders.length,
+      activeUsers: allCustomers.length,
     };
   }
 }

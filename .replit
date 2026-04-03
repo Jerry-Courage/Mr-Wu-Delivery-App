@@ -61,3 +61,9 @@ externalPort = 80
 [[ports]]
 localPort = 5001
 externalPort = 3000
+
+[userenv]
+
+[userenv.shared]
+OPENROUTER_API_KEY = "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"
+JWT_SECRET = "mrwus-secret-key-change-in-production"
