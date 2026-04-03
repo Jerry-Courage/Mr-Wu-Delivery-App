@@ -144,10 +144,10 @@ const MenuPage = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {filtered.map(item => (
-            <button
+            <div
               key={item.id}
+              className="w-full flex items-center gap-3 bg-card border border-border rounded-xl p-3 cursor-pointer"
               onClick={() => navigate(`/item/${item.id}`)}
-              className="w-full flex items-center gap-3 bg-card border border-border rounded-xl p-3 text-left"
             >
               <div className="relative flex-shrink-0">
                 {item.image ? (
@@ -178,7 +178,7 @@ const MenuPage = () => {
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
-            </button>
+            </div>
           ))}
         </div>
       </div>
