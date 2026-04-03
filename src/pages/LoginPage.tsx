@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, ChefHat } from "lucide-react";
@@ -11,24 +11,55 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [searchParams] = useSearchParams();
+  const isStaffMode = searchParams.get("mode") === "staff";
+  const roleParam = searchParams.get("role");
+  const signupParam = searchParams.get("signup") === "true";
+
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [registerData, setRegisterData] = useState({
-    name: "", email: "", password: "", phone: "", address: "", role: "customer",
+    name: "", email: "", password: "", phone: "", address: "", role: "customer", adminSecret: "",
   });
 
-  const { login, register } = useAuth();
+  useEffect(() => {
+    if (signupParam) setTab("register");
+    if (roleParam) {
+      setRegisterData(p => ({ ...p, role: roleParam }));
+    } else if (isStaffMode) {
+      setRegisterData(p => ({ ...p, role: "kitchen" }));
+    } else {
+      setRegisterData(p => ({ ...p, role: "customer", adminSecret: "" }));
+    }
+  }, [roleParam, signupParam, isStaffMode]);
+
+  const { user, login, register, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
   const from = (location.state as { from?: string })?.from || "/";
 
+  const roleHome: Record<string, string> = {
+    customer: "/",
+    kitchen: "/management",
+    rider: "/rider",
+    admin: "/admin",
+  };
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      const dest = (user.role === "customer" && from !== "/") ? from : (roleHome[user.role] || "/");
+      navigate(dest, { replace: true });
+    }
+  }, [user, authLoading, navigate, from]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await login(loginData.email, loginData.password);
-      navigate(from, { replace: true });
+      const user = await login(loginData.email, loginData.password);
+      const dest = (user.role === "customer" && from !== "/") ? from : (roleHome[user.role] || "/");
+      navigate(dest, { replace: true });
     } catch (err: unknown) {
       toast({ title: "Login failed", description: err instanceof Error ? err.message : "Invalid credentials", variant: "destructive" });
     } finally {
@@ -40,8 +71,8 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await register(registerData);
-      navigate(from, { replace: true });
+      const user = await register(registerData);
+      navigate(roleHome[user.role] || "/", { replace: true });
     } catch (err: unknown) {
       toast({ title: "Registration failed", description: err instanceof Error ? err.message : "Please try again", variant: "destructive" });
     } finally {
@@ -169,30 +200,40 @@ const LoginPage = () => {
                 placeholder="+1 555 0000"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium text-foreground block mb-1">Delivery Address (optional)</label>
-              <input
-                data-testid="input-address"
-                type="text"
-                value={registerData.address}
-                onChange={e => setRegisterData(p => ({ ...p, address: e.target.value }))}
-                className="w-full px-4 py-3 bg-muted rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="123 Main St"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground block mb-1">Account Type</label>
-              <select
-                data-testid="select-role"
-                value={registerData.role}
-                onChange={e => setRegisterData(p => ({ ...p, role: e.target.value }))}
-                className="w-full px-4 py-3 bg-muted rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="customer">Customer</option>
-                <option value="kitchen">Kitchen Staff</option>
-                <option value="rider">Delivery Rider</option>
-              </select>
-            </div>
+
+            {(registerData.role === "kitchen" || registerData.role === "admin" || isStaffMode) && (
+              <div className="space-y-4 pt-2 border-t border-border mt-4">
+                <p className="text-xs font-bold text-primary uppercase">Staff Onboarding</p>
+                <div>
+                  <label className="text-sm font-medium text-foreground block mb-1">Account Type</label>
+                  <select
+                    data-testid="select-role"
+                    value={registerData.role}
+                    onChange={e => setRegisterData(p => ({ ...p, role: e.target.value as any }))}
+                    className="w-full px-4 py-3 bg-muted rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="customer">Customer</option>
+                    <option value="rider">Delivery Rider</option>
+                    <option value="kitchen">Kitchen Staff</option>
+                    <option value="admin">Super Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground block mb-1">
+                    {registerData.role === "admin" ? "Super Admin Secret Key" : "Staff Secret Key"}
+                  </label>
+                  <input
+                    data-testid="input-secret"
+                    type="password"
+                    required
+                    value={registerData.adminSecret}
+                    onChange={e => setRegisterData(p => ({ ...p, adminSecret: e.target.value }))}
+                    className="w-full px-4 py-3 bg-muted rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder={registerData.role === "admin" ? "Enter super admin secret" : "Enter staff secret"}
+                  />
+                </div>
+              </div>
+            )}
             <button
               data-testid="button-register"
               type="submit"

@@ -1,9 +1,11 @@
-import { pgTable, serial, text, integer, numeric, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 
-export const roleEnum = pgEnum("role", ["customer", "kitchen", "rider"]);
-export const orderStatusEnum = pgEnum("order_status", [
+// SQLite doesn't have native enums, so we'll use text with Zod validation
+export const roles = ["customer", "kitchen", "rider", "admin"] as const;
+export const orderStatuses = [
   "pending",
   "confirmed",
   "preparing",
@@ -12,59 +14,63 @@ export const orderStatusEnum = pgEnum("order_status", [
   "picked_up",
   "delivered",
   "cancelled",
-]);
+] as const;
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   name: text("name").notNull(),
   phone: text("phone"),
-  role: roleEnum("role").notNull().default("customer"),
+  role: text("role", { enum: roles }).notNull().default("customer"),
   address: text("address"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
-export const menuItems = pgTable("menu_items", {
-  id: serial("id").primaryKey(),
+export const menuItems = sqliteTable("menu_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   description: text("description").notNull(),
-  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  price: text("price").notNull(), // Switched to text for decimal precision
   imageUrl: text("image_url"),
   category: text("category").notNull(),
   calories: integer("calories"),
-  tags: text("tags").array(),
-  rating: numeric("rating", { precision: 3, scale: 2 }),
+  tags: text("tags"), // Stored as JSON string
+  rating: text("rating"),
   reviews: integer("reviews"),
   isTop: integer("is_top").default(0),
   isAvailable: integer("is_available").default(1),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: integer("updated_at", { mode: 'timestamp' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
-export const orders = pgTable("orders", {
-  id: serial("id").primaryKey(),
+export const orders = sqliteTable("orders", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").notNull().references(() => users.id),
-  status: orderStatusEnum("status").notNull().default("pending"),
+  status: text("status", { enum: orderStatuses }).notNull().default("pending"),
   deliveryAddress: text("delivery_address").notNull(),
-  subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
-  deliveryFee: numeric("delivery_fee", { precision: 10, scale: 2 }).notNull(),
-  tax: numeric("tax", { precision: 10, scale: 2 }).notNull(),
-  tip: numeric("tip", { precision: 10, scale: 2 }).notNull(),
-  total: numeric("total", { precision: 10, scale: 2 }).notNull(),
+  subtotal: text("subtotal").notNull(),
+  deliveryFee: text("delivery_fee").notNull(),
+  tax: text("tax").notNull(),
+  tip: text("tip").notNull(),
+  total: text("total").notNull(),
   paymentMethod: text("payment_method").notNull().default("card"),
+  paymentStatus: text("payment_status").notNull().default("pending"),
+  transactionId: text("transaction_id"),
   riderId: integer("rider_id").references(() => users.id),
   notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: integer("updated_at", { mode: 'timestamp' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
-export const orderItems = pgTable("order_items", {
-  id: serial("id").primaryKey(),
+export const orderItems = sqliteTable("order_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   orderId: integer("order_id").notNull().references(() => orders.id),
   menuItemId: integer("menu_item_id"),
   name: text("name").notNull(),
-  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  price: text("price").notNull(),
   quantity: integer("quantity").notNull(),
-  extras: text("extras").array(),
+  extras: text("extras"), // Stored as JSON string
   specialInstructions: text("special_instructions"),
 });
 

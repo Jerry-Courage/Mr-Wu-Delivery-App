@@ -5,7 +5,7 @@ export interface AuthUser {
   id: number;
   email: string;
   name: string;
-  role: "customer" | "kitchen" | "rider";
+  role: "customer" | "kitchen" | "rider" | "admin";
   phone?: string | null;
   address?: string | null;
 }
@@ -14,8 +14,8 @@ interface AuthContextType {
   user: AuthUser | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: { email: string; password: string; name: string; phone?: string; role?: string; address?: string }) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
+  register: (data: { email: string; password: string; name: string; phone?: string; role?: string; address?: string; adminSecret?: string }) => Promise<AuthUser>;
   logout: () => void;
 }
 
@@ -52,13 +52,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem("auth_token", res.token);
     setToken(res.token);
     setUser(res.user);
+    return res.user;
   };
 
-  const register = async (data: { email: string; password: string; name: string; phone?: string; role?: string; address?: string }) => {
+  const register = async (data: { email: string; password: string; name: string; phone?: string; role?: string; address?: string; adminSecret?: string }) => {
     const res = await api.post<{ token: string; user: AuthUser }>("/auth/register", data);
     localStorage.setItem("auth_token", res.token);
     setToken(res.token);
     setUser(res.user);
+    return res.user;
   };
 
   const logout = () => {

@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Bike, MapPin, Phone, Package, LogOut, RefreshCw, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useSocket } from "@/context/SocketContext";
 
 type OrderStatus = "pending" | "confirmed" | "preparing" | "ready" | "assigned" | "picked_up" | "delivered" | "cancelled";
 
@@ -42,6 +44,7 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
 
 const RiderPage = () => {
   const { user, logout } = useAuth();
+  const { socket } = useSocket();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -50,7 +53,21 @@ const RiderPage = () => {
     queryKey: ["/api/rider/orders"],
     queryFn: () => api.get("/rider/orders"),
     refetchInterval: 10000,
+    enabled: user?.role === "rider",
   });
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("order_assigned", (data) => {
+        queryClient.invalidateQueries({ queryKey: ["/api/rider/orders"] });
+        toast({ 
+          title: "🛵 New Delivery Assigned!", 
+          description: `Order #${String(data.orderId).padStart(5, '0')} is ready for pickup.` 
+        });
+      });
+      return () => { socket.off("order_assigned"); };
+    }
+  }, [socket, queryClient, toast]);
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: "picked_up" | "delivered" }) =>

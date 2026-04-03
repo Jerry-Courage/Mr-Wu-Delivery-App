@@ -1,10 +1,9 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import Database from "better-sqlite3";
 import * as schema from "../shared/schema";
+import path from "path";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
-});
-
-export const db = drizzle(pool, { schema });
+const dbPath = path.resolve("sqlite_v2.db");
+console.log("### DB_PATH:", dbPath);
+const sqlite = new Database(dbPath);
+export const db = drizzle(sqlite, { schema });

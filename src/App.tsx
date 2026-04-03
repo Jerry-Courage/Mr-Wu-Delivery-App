@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { SocketProvider } from "@/context/SocketContext";
 import AppShell from "@/components/layout/AppShell";
 import HomePage from "./pages/HomePage";
 import MenuPage from "./pages/MenuPage";
@@ -19,6 +20,8 @@ import SearchPage from "./pages/SearchPage";
 import LoginPage from "./pages/LoginPage";
 import ManagementPage from "./pages/ManagementPage";
 import RiderPage from "./pages/RiderPage";
+import OnboardingPage from "./pages/OnboardingPage";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -30,29 +33,76 @@ const queryClient = new QueryClient({
   },
 });
 
-function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) {
+function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
-  if (!user) return <Navigate to="/login" replace />;
-  if (!allowedRoles.includes(user.role)) return <Navigate to="/" replace />;
+  const location = useLocation();
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-muted-foreground font-medium">Loading Mr Wu's App...</p></div>;
+  
+  if (!user) {
+    return <Navigate to="/" state={{ from: location.pathname }} replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    const roleHome: Record<string, string> = {
+      customer: "/home",
+      kitchen: "/management",
+      rider: "/rider",
+      admin: "/admin",
+    };
+    return <Navigate to={roleHome[user.role] || "/home"} replace />;
+  }
+
   return <>{children}</>;
 }
 
+function RootRoute() {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-muted-foreground font-medium">Loading Mr Wu's App...</p></div>;
+  
+  if (!user) {
+    return <OnboardingPage />;
+  }
+
+  const roleHome: Record<string, string> = {
+    customer: "/home",
+    kitchen: "/management",
+    rider: "/rider",
+    admin: "/admin",
+  };
+
+  // If we're at the root and logged in, go to our role's home
+  if (location.pathname === "/") {
+    return <Navigate to={roleHome[user.role] || "/home"} replace />;
+  }
+
+  return <Navigate to={roleHome[user.role] || "/home"} replace />;
+}
+
 function AppRoutes() {
+  const customerOnly = ["customer"];
+
   return (
     <Routes>
-      <Route path="/" element={<AppShell><HomePage /></AppShell>} />
-      <Route path="/menu" element={<AppShell><MenuPage /></AppShell>} />
-      <Route path="/item/:id" element={<AppShell><ItemDetailPage /></AppShell>} />
-      <Route path="/checkout" element={<AppShell><CheckoutPage /></AppShell>} />
-      <Route path="/orders" element={<AppShell><OrdersPage /></AppShell>} />
-      <Route path="/tracking/:id" element={<AppShell><TrackingPage /></AppShell>} />
-      <Route path="/tracking" element={<AppShell><TrackingPage /></AppShell>} />
-      <Route path="/nearby" element={<AppShell><NearbyPage /></AppShell>} />
-      <Route path="/profile" element={<AppShell><ProfilePage /></AppShell>} />
-      <Route path="/help" element={<AppShell><HelpPage /></AppShell>} />
-      <Route path="/search" element={<AppShell><SearchPage /></AppShell>} />
+      <Route path="/" element={<RootRoute />} />
+      <Route path="/onboarding" element={<OnboardingPage />} />
       <Route path="/login" element={<LoginPage />} />
+      
+      {/* Customer Routes */}
+      <Route path="/home" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><HomePage /></AppShell></ProtectedRoute>} />
+      <Route path="/menu" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><MenuPage /></AppShell></ProtectedRoute>} />
+      <Route path="/item/:id" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><ItemDetailPage /></AppShell></ProtectedRoute>} />
+      <Route path="/checkout" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><CheckoutPage /></AppShell></ProtectedRoute>} />
+      <Route path="/orders" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><OrdersPage /></AppShell></ProtectedRoute>} />
+      <Route path="/tracking/:id" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><TrackingPage /></AppShell></ProtectedRoute>} />
+      <Route path="/nearby" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><NearbyPage /></AppShell></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><ProfilePage /></AppShell></ProtectedRoute>} />
+      <Route path="/help" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><HelpPage /></AppShell></ProtectedRoute>} />
+      <Route path="/search" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><SearchPage /></AppShell></ProtectedRoute>} />
+      
+      {/* Kitchen Routes */}
       <Route
         path="/management"
         element={
@@ -61,6 +111,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      {/* Rider Routes */}
       <Route
         path="/rider"
         element={
@@ -69,6 +121,17 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      {/* Admin Routes */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -80,11 +143,13 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
-        <CartProvider>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </CartProvider>
+        <SocketProvider>
+          <CartProvider>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </CartProvider>
+        </SocketProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

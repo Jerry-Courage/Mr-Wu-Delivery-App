@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Share2, Phone, MapPin, Sparkles } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import { api } from "@/lib/api";
+import { useSocket } from "@/context/SocketContext";
 
 type OrderStatus = "pending" | "confirmed" | "preparing" | "ready" | "assigned" | "picked_up" | "delivered" | "cancelled";
 
@@ -37,6 +39,8 @@ const STATUS_ORDER: OrderStatus[] = ["pending", "confirmed", "preparing", "ready
 const TrackingPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { socket } = useSocket();
+  const queryClient = useQueryClient();
 
   const { data: order, isLoading } = useQuery<OrderDetail>({
     queryKey: ["/api/orders", id],
@@ -52,6 +56,18 @@ const TrackingPage = () => {
     refetchInterval: 60000,
     retry: 1,
   });
+
+  useEffect(() => {
+    if (socket && id) {
+      socket.on("order_status", (data) => {
+        if (data.orderId === Number(id)) {
+          queryClient.invalidateQueries({ queryKey: ["/api/orders", id] });
+          queryClient.invalidateQueries({ queryKey: ["/api/ai/eta", id] });
+        }
+      });
+      return () => { socket.off("order_status"); };
+    }
+  }, [socket, id, queryClient]);
 
   if (isLoading) {
     return (

@@ -1,4 +1,4 @@
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import {
   users, orders, orderItems, menuItems,
@@ -6,17 +6,41 @@ import {
 } from "../shared/schema";
 import bcrypt from "bcryptjs";
 
+// Helper to handle JSON parsing for SQLite "arrays"
+function parseTags(tags: string | null): string[] {
+  if (!tags) return [];
+  try {
+    return JSON.parse(tags);
+  } catch {
+    return [];
+  }
+}
+
+function parseExtras(extras: string | null): string[] {
+  if (!extras) return [];
+  try {
+    return JSON.parse(extras);
+  } catch {
+    return [];
+  }
+}
+
 export interface IStorage {
   // Auth
-  createUser(data: { email: string; password: string; name: string; phone?: string; role?: "customer" | "kitchen" | "rider"; address?: string }): Promise<User>;
+  createUser(data: { email: string; password: string; name: string; phone?: string; role?: "customer" | "kitchen" | "rider" | "admin"; address?: string }): Promise<User>;
   getUserByEmail(email: string): Promise<User | null>;
   getUserById(id: number): Promise<User | null>;
   validatePassword(user: User, password: string): Promise<boolean>;
+  getUsersByRole(role: string): Promise<User[]>;
+  deleteUser(id: number): Promise<void>;
   getAllRiders(): Promise<User[]>;
 
   // Menu
-  getMenuItems(): Promise<MenuItem[]>;
+  getMenuItems(includeUnavailable?: boolean): Promise<MenuItem[]>;
   getMenuItem(id: number): Promise<MenuItem | null>;
+  createMenuItem(data: any): Promise<MenuItem>;
+  updateMenuItem(id: number, data: any): Promise<MenuItem>;
+  deleteMenuItem(id: number): Promise<void>;
 
   // Orders
   createOrder(data: {
@@ -36,11 +60,22 @@ export interface IStorage {
   getAllOrders(): Promise<(Order & { items: OrderItem[]; customer: User; rider?: User | null })[]>;
   getRiderOrders(riderId: number): Promise<(Order & { items: OrderItem[]; customer: User })[]>;
   updateOrderStatus(id: number, status: Order["status"]): Promise<Order>;
+  updatePaymentStatus(id: number, status: string, transactionId?: string): Promise<Order>;
+  updateMenuItemImage(id: number, imageUrl: string): Promise<MenuItem>;
   assignRider(orderId: number, riderId: number): Promise<Order>;
+
+  // Admin Stats
+  getAdminStats(days: number): Promise<{
+    revenue: { date: string; amount: number }[];
+    orders: { date: string; count: number }[];
+    popularItems: { name: string; count: number }[];
+    totalRevenue: number;
+    totalOrders: number;
+  }>;
 }
 
 export class Storage implements IStorage {
-  async createUser(data: { email: string; password: string; name: string; phone?: string; role?: "customer" | "kitchen" | "rider"; address?: string }): Promise<User> {
+  async createUser(data: { email: string; password: string; name: string; phone?: string; role?: "customer" | "kitchen" | "rider" | "admin"; address?: string }): Promise<User> {
     const passwordHash = await bcrypt.hash(data.password, 10);
     const [user] = await db.insert(users).values({
       email: data.email,
@@ -49,6 +84,7 @@ export class Storage implements IStorage {
       phone: data.phone,
       role: data.role ?? "customer",
       address: data.address,
+      createdAt: new Date(),
     }).returning();
     return user;
   }
@@ -67,17 +103,55 @@ export class Storage implements IStorage {
     return bcrypt.compare(password, user.passwordHash);
   }
 
+  async getUsersByRole(role: string): Promise<User[]> {
+    return db.select().from(users).where(eq(users.role, role));
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+
   async getAllRiders(): Promise<User[]> {
     return db.select().from(users).where(eq(users.role, "rider"));
   }
 
-  async getMenuItems(): Promise<MenuItem[]> {
-    return db.select().from(menuItems).where(eq(menuItems.isAvailable, 1));
+  async getMenuItems(includeUnavailable?: boolean): Promise<MenuItem[]> {
+    if (includeUnavailable) {
+      return db.select().from(menuItems).orderBy(desc(menuItems.createdAt));
+    }
+    return db.select().from(menuItems).where(eq(menuItems.isAvailable, 1)).orderBy(desc(menuItems.createdAt));
   }
 
   async getMenuItem(id: number): Promise<MenuItem | null> {
     const [item] = await db.select().from(menuItems).where(eq(menuItems.id, id));
     return item ?? null;
+  }
+
+  async createMenuItem(data: any): Promise<MenuItem> {
+    const [item] = await db.insert(menuItems).values({
+      ...data,
+      isTop: data.isTop ? 1 : 0,
+      isAvailable: data.isAvailable ? 1 : 0,
+    }).returning();
+    return item;
+  }
+
+  async updateMenuItem(id: number, data: any): Promise<MenuItem> {
+    const [item] = await db.update(menuItems)
+      .set({
+        ...data,
+        isTop: data.isTop !== undefined ? (data.isTop ? 1 : 0) : undefined,
+        isAvailable: data.isAvailable !== undefined ? (data.isAvailable ? 1 : 0) : undefined,
+        updatedAt: new Date()
+      })
+      .where(eq(menuItems.id, id))
+      .returning();
+    if (!item) throw new Error("Menu item not found");
+    return item;
+  }
+
+  async deleteMenuItem(id: number): Promise<void> {
+    await db.delete(menuItems).where(eq(menuItems.id, id));
   }
 
   async createOrder(data: {
@@ -113,7 +187,7 @@ export class Storage implements IStorage {
           name: item.name,
           price: item.price,
           quantity: item.quantity,
-          extras: item.extras,
+          extras: item.extras ? JSON.stringify(item.extras) : null,
           specialInstructions: item.specialInstructions,
         }))
       );
@@ -159,7 +233,7 @@ export class Storage implements IStorage {
 
   async getRiderOrders(riderId: number): Promise<(Order & { items: OrderItem[]; customer: User })[]> {
     const riderOrders = await db.select().from(orders).where(
-      and(eq(orders.riderId, riderId))
+      eq(orders.riderId, riderId)
     ).orderBy(desc(orders.createdAt));
     const result = await Promise.all(
       riderOrders.map(async order => {
@@ -179,12 +253,81 @@ export class Storage implements IStorage {
     return order;
   }
 
+  async updatePaymentStatus(id: number, status: string, transactionId?: string): Promise<Order> {
+    const [order] = await db.update(orders)
+      .set({ paymentStatus: status, transactionId: transactionId ?? null, updatedAt: new Date() })
+      .where(eq(orders.id, id))
+      .returning();
+    return order;
+  }
+
+  async updateMenuItemImage(id: number, imageUrl: string): Promise<MenuItem> {
+    const [item] = await db.update(menuItems)
+      .set({ imageUrl, updatedAt: new Date() })
+      .where(eq(menuItems.id, id))
+      .returning();
+    return item;
+  }
+
   async assignRider(orderId: number, riderId: number): Promise<Order> {
     const [order] = await db.update(orders)
       .set({ riderId, status: "assigned", updatedAt: new Date() })
       .where(eq(orders.id, orderId))
       .returning();
     return order;
+  }
+
+  async getAdminStats(days: number): Promise<{
+    revenue: { date: string; amount: number }[];
+    orders: { date: string; count: number }[];
+    popularItems: { name: string; count: number }[];
+    totalRevenue: number;
+    totalOrders: number;
+  }> {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+
+    const recentOrders = await db.select().from(orders).where(sql`${orders.createdAt} >= ${cutoff}`);
+    
+    // Aggregate by date
+    const dailyStats: Record<string, { revenue: number, orders: number }> = {};
+    let totalRevenue = 0;
+
+    recentOrders.forEach(order => {
+      const date = order.createdAt.toISOString().split('T')[0];
+      const amount = parseFloat(order.total);
+      totalRevenue += amount;
+
+      if (!dailyStats[date]) dailyStats[date] = { revenue: 0, orders: 0 };
+      dailyStats[date].revenue += amount;
+      dailyStats[date].orders += 1;
+    });
+
+    const revenue = Object.entries(dailyStats).map(([date, stats]) => ({ date, amount: stats.revenue }));
+    const orderData = Object.entries(dailyStats).map(([date, stats]) => ({ date, count: stats.orders }));
+
+    // Popular items
+    const allOrderItems = await db.select().from(orderItems);
+    const itemCounts: Record<string, number> = {};
+    
+    // Filter items belonging to recent orders
+    const recentOrderIds = new Set(recentOrders.map(o => o.id));
+    allOrderItems.filter(item => recentOrderIds.has(item.orderId)).forEach(item => {
+      itemCounts[item.name] = (itemCounts[item.name] || 0) + item.quantity;
+    });
+
+    const popularItems = Object.entries(itemCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    return {
+      revenue,
+      orders: orderData,
+      popularItems,
+      totalRevenue,
+      totalOrders: recentOrders.length,
+    };
   }
 }
 

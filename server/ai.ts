@@ -1,6 +1,6 @@
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL = "openai/gpt-4o-mini";
+const MODEL = "openrouter/auto";
 
 interface Message {
   role: "system" | "user" | "assistant";
@@ -132,13 +132,15 @@ export async function getKitchenSummary(
 ): Promise<string> {
   if (orders.length === 0) return "No active orders right now. Enjoy the quiet!";
 
-  const ordersText = orders
-    .filter(o => !["delivered", "cancelled"].includes(o.status))
-    .slice(0, 10)
+  const filteredOrders = orders.filter(o => o && !["delivered", "cancelled"].includes(o.status)).slice(0, 10);
+  if (filteredOrders.length === 0) return "No active orders to report. Great time to prep for the next rush!";
+
+  const ordersText = filteredOrders
     .map(o => {
-      const age = Math.floor((Date.now() - new Date(o.createdAt).getTime()) / 60000);
-      const items = o.items.map(i => `${i.quantity}× ${i.name}`).join(", ");
-      return `Order #${String(o.id).padStart(5,"0")} [${o.status}, ${age}min ago]: ${items}`;
+      const createdDate = o.createdAt ? new Date(o.createdAt) : new Date();
+      const age = Math.floor((Date.now() - createdDate.getTime()) / 60000);
+      const items = (o.items || []).map(i => `${i.quantity || 1}× ${i.name || "Item"}`).join(", ");
+      return `Order #${String(o.id || 0).padStart(5,"0")} [${o.status || "pending"}, ${age}min ago]: ${items || "No items listed"}`;
     })
     .join("\n");
 
@@ -155,4 +157,33 @@ Give a short, helpful 1-2 sentence kitchen briefing. Flag anything urgent (order
   ]);
 
   return response.trim() || "All orders looking good. Keep up the great work!";
+}
+export async function getAdminInsights(
+  stats: {
+    revenue: { date: string; amount: number }[];
+    orders: { date: string; count: number }[];
+    popularItems: { name: string; count: number }[];
+    totalRevenue: number;
+    totalOrders: number;
+  }
+): Promise<string> {
+  const popularText = stats.popularItems.map(i => `${i.name} (${i.count} sold)`).join(", ");
+  const recentRevenue = stats.revenue.slice(-7).map(r => `$${r.amount}`).join(", ");
+
+  const prompt = `You are a high-level business consultant for Mr Wu's Chinese Delivery.
+  
+  30-Day Performance Summary:
+  - Total Revenue: $${stats.totalRevenue.toFixed(2)}
+  - Total Orders: ${stats.totalOrders}
+  - Popular Items: ${popularText}
+  - Last 7 days revenue trend: ${recentRevenue}
+
+  Provide a professional, actionable 2-3 sentence strategic insight. Focus on what's working, where to push (e.g. upsell popular items, address slow days), or potential menu adjustments. Be encouraging but data-driven.`;
+
+  const response = await chat([
+    { role: "system", content: "You are a strategic business analyst for a restaurant. Be concise and insightful." },
+    { role: "user", content: prompt },
+  ]);
+
+  return response.trim() || "Performance is steady. Focus on maintaining quality and speed.";
 }

@@ -27,22 +27,35 @@ const CheckoutPage = () => {
   const total = subtotal + deliveryFee + tip + tax;
 
   const placeOrderMutation = useMutation({
-    mutationFn: () => api.post<{ id: number }>("/orders", {
-      deliveryAddress: orderType === "delivery" ? (address || "Main St, 123") : "Pickup",
-      subtotal: subtotal.toFixed(2),
-      deliveryFee: deliveryFee.toFixed(2),
-      tax: tax.toFixed(2),
-      tip: tip.toFixed(2),
-      total: total.toFixed(2),
-      paymentMethod: paymentMethod === "apple" ? "apple_pay" : "card",
-      items: items.map(({ item, quantity }) => ({
-        name: item.name,
-        price: item.price.toFixed(2),
-        quantity,
-      })),
-    }),
+    mutationFn: async () => {
+      // 1. Create the order
+      const order = await api.post<{ id: number }>("/orders", {
+        deliveryAddress: orderType === "delivery" ? (address || "Main St, 123") : "Pickup",
+        subtotal: subtotal.toFixed(2),
+        deliveryFee: deliveryFee.toFixed(2),
+        tax: tax.toFixed(2),
+        tip: tip.toFixed(2),
+        total: total.toFixed(2),
+        paymentMethod: paymentMethod === "apple" ? "apple_pay" : "card",
+        items: items.map(({ item, quantity }) => ({
+          name: item.name,
+          price: item.price.toFixed(2),
+          quantity,
+        })),
+      });
+
+      // 2. Process mock payment
+      await api.post("/payments/process", {
+        orderId: order.id,
+        amount: total.toFixed(2),
+        method: paymentMethod === "apple" ? "apple_pay" : "card",
+      });
+
+      return order;
+    },
     onSuccess: (data) => {
       clearCart();
+      toast({ title: "Order Confirmed!", description: "Your payment was processed successfully." });
       navigate(`/tracking/${data.id}`);
     },
     onError: (err: Error) => {

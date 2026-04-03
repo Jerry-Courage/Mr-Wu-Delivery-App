@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { ChefHat, Clock, CheckCircle, Bike, Package, LogOut, RefreshCw, UserCheck, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useSocket } from "@/context/SocketContext";
 
 type OrderStatus = "pending" | "confirmed" | "preparing" | "ready" | "assigned" | "picked_up" | "delivered" | "cancelled";
 
@@ -55,6 +56,7 @@ const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
 
 const ManagementPage = () => {
   const { user, logout } = useAuth();
+  const { socket } = useSocket();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -66,11 +68,13 @@ const ManagementPage = () => {
     queryKey: ["/api/management/orders"],
     queryFn: () => api.get("/management/orders"),
     refetchInterval: 15000,
+    enabled: user?.role === "kitchen",
   });
 
   const { data: riders = [] } = useQuery<Rider[]>({
     queryKey: ["/api/management/riders"],
     queryFn: () => api.get("/management/riders"),
+    enabled: user?.role === "kitchen",
   });
 
   const { data: aiSummary, isLoading: aiLoading } = useQuery<{ summary: string }>({
@@ -78,7 +82,22 @@ const ManagementPage = () => {
     queryFn: () => api.get("/ai/kitchen-summary"),
     refetchInterval: 60000,
     retry: 1,
+    enabled: user?.role === "kitchen",
   });
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("new_order", (data) => {
+        queryClient.invalidateQueries({ queryKey: ["/api/management/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/ai/kitchen-summary"] });
+        toast({ 
+          title: "🚀 New Order Received!", 
+          description: `Order #${String(data.orderId).padStart(5, '0')} just came in.` 
+        });
+      });
+      return () => { socket.off("new_order"); };
+    }
+  }, [socket, queryClient, toast]);
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: OrderStatus }) =>
