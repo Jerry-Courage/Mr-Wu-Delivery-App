@@ -93,7 +93,7 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 if (process.env.NODE_ENV === "production" || process.env.RENDER) {
   const distPath = path.resolve(process.cwd(), "dist");
   app.use(express.static(distPath));
-  app.get("*", (req, res) => {
+  app.get("(.*)", (req, res) => {
     if (!req.path.startsWith("/api")) {
       res.sendFile(path.resolve(distPath, "index.html"));
     }
