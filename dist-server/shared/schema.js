@@ -1,5 +1,4 @@
 import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 // SQLite doesn't have native enums, so we'll use text with Zod validation
@@ -72,8 +71,31 @@ export const orderItems = sqliteTable("order_items", {
     extras: text("extras"), // Stored as JSON string
     specialInstructions: text("special_instructions"),
 });
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, passwordHash: true }).extend({
+export const insertUserSchema = z.object({
+    email: z.string().email(),
     password: z.string().min(6),
+    name: z.string().min(1),
+    phone: z.string().optional(),
+    role: z.enum(roles).optional(),
+    address: z.string().optional(),
 });
-export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true, updatedAt: true, status: true, riderId: true });
-export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true });
+export const insertOrderSchema = z.object({
+    userId: z.number().int(),
+    deliveryAddress: z.string().min(1),
+    subtotal: z.string(),
+    deliveryFee: z.string(),
+    tax: z.string(),
+    tip: z.string(),
+    total: z.string(),
+    paymentMethod: z.string(),
+    notes: z.string().optional(),
+});
+export const insertOrderItemSchema = z.object({
+    orderId: z.number().int(),
+    menuItemId: z.number().int().optional(),
+    name: z.string(),
+    price: z.string(),
+    quantity: z.number().int().min(1),
+    extras: z.string().optional(),
+    specialInstructions: z.string().optional(),
+});

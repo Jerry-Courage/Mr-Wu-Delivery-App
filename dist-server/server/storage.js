@@ -1,6 +1,6 @@
 import { eq, desc } from "drizzle-orm";
 import { db } from "./db";
-import { users, orders, orderItems, menuItems, } from "../shared/schema";
+import { users, orders, orderItems, menuItems } from "../shared/schema";
 import bcrypt from "bcryptjs";
 // Helper to handle JSON parsing for SQLite "arrays"
 function parseTags(tags) {

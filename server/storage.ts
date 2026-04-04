@@ -2,7 +2,7 @@ import { eq, desc, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import {
   users, orders, orderItems, menuItems,
-  User, Order, OrderItem, MenuItem,
+  User, Order, OrderItem, MenuItem, roles
 } from "../shared/schema";
 import bcrypt from "bcryptjs";
 
@@ -27,7 +27,7 @@ function parseExtras(extras: string | null): string[] {
 
 export interface IStorage {
   // Auth
-  createUser(data: { email: string; password: string; name: string; phone?: string; role?: "customer" | "kitchen" | "rider" | "admin"; address?: string }): Promise<User>;
+  createUser(data: { email: string; password: string; name: string; phone?: string; role?: (typeof roles)[number]; address?: string }): Promise<User>;
   getUserByEmail(email: string): Promise<User | null>;
   getUserById(id: number): Promise<User | null>;
   validatePassword(user: User, password: string): Promise<boolean>;
@@ -83,7 +83,7 @@ export interface IStorage {
 }
 
 export class Storage implements IStorage {
-  async createUser(data: { email: string; password: string; name: string; phone?: string; role?: "customer" | "kitchen" | "rider" | "admin"; address?: string }): Promise<User> {
+  async createUser(data: { email: string; password: string; name: string; phone?: string; role?: (typeof roles)[number]; address?: string }): Promise<User> {
     const passwordHash = await bcrypt.hash(data.password, 10);
     const [user] = await db.insert(users).values({
       email: data.email,

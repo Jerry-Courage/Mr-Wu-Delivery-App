@@ -1,5 +1,5 @@
 # Build stage
-FROM node:20-slim AS builder
+FROM node:20 AS builder
 
 WORKDIR /app
 
@@ -14,11 +14,11 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
-# This will build both the frontend (via vite) and the server (via esbuild)
+# This will build both the frontend (via vite) and the server (via tsc)
 RUN npm run build
 
 # Runtime stage
-FROM node:20-slim AS runner
+FROM node:20 AS runner
 
 WORKDIR /app
 
@@ -29,7 +29,7 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the bundled server and frontend assets
+# Copy the compiled server and frontend assets
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/dist-server ./dist-server
 COPY --from=builder /app/package.json ./package.json
@@ -45,7 +45,6 @@ COPY --from=builder /app/public/assets ./public/assets
 RUN mkdir -p public/uploads
 
 # CRITICAL: Set full permissions on the database and public folders
-# This ensures SQLite can create wal/shm files even if the container user is non-root
 RUN chmod -R 777 .
 
 # Set environment to production
@@ -54,5 +53,5 @@ ENV PORT=3001
 
 EXPOSE 3001
 
-# Start the server
-CMD ["node", "dist-server/index.cjs"]
+# Start the server using absolute paths to avoid any resolution issues
+CMD ["node", "/app/dist-server/server/index.js"]

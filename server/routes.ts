@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
+import { roles } from "../shared/schema";
 import { z } from "zod";
 import { getRecommendations, getOrderETA, getKitchenSummary, getAdminInsights, searchMenu, getSupportResponse } from "./ai";
 import { io } from "./index";
@@ -69,7 +70,7 @@ const registerSchema = z.object({
   password: z.string().min(6),
   name: z.string().min(1),
   phone: z.string().optional(),
-  role: z.enum(["customer", "kitchen", "rider", "admin"]).optional(),
+  role: z.enum(roles).optional(),
   address: z.string().optional(),
   adminSecret: z.string().optional(),
 });
@@ -95,7 +96,8 @@ router.post("/auth/register", async (req, res) => {
   const existing = await storage.getUserByEmail(email);
   if (existing) return res.status(409).json({ error: "Email already in use" });
 
-  const user = await storage.createUser(result.data);
+  const { adminSecret: _, ...userData } = result.data;
+  const user = await (storage as any).createUser(userData);
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
   res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone, address: user.address } });
 });
@@ -177,7 +179,7 @@ router.post("/orders", auth, requireRole("customer"), async (req: AuthRequest, r
   const result = createOrderSchema.safeParse(req.body);
   if (!result.success) return res.status(400).json({ error: result.error.flatten() });
 
-  const order = await storage.createOrder({ userId: req.user!.id, ...result.data });
+  const order = await (storage as any).createOrder({ userId: req.user!.id, ...result.data });
   
   // Notify kitchen of new order
   io.to("kitchen").emit("new_order", { orderId: order.id, customerName: req.user!.email });
