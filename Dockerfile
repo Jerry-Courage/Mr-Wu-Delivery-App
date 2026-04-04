@@ -34,6 +34,10 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/dist-server ./dist-server
 COPY --from=builder /app/package.json ./package.json
 
+# Copy diagnostic script
+COPY diagnostic.sh ./
+RUN chmod +x diagnostic.sh
+
 # Install only production dependencies (better-sqlite3 must be installed here)
 RUN npm install --omit=dev --no-audit --no-fund
 
@@ -44,7 +48,7 @@ COPY --from=builder /app/public/assets ./public/assets
 # Ensure uploads directory exists and set permissions
 RUN mkdir -p public/uploads
 
-# CRITICAL: Set full permissions on the database and public folders
+# CRITICAL: Set full permissions on everything to ensure write access and execution
 RUN chmod -R 777 .
 
 # Set environment to production
@@ -53,5 +57,6 @@ ENV PORT=3001
 
 EXPOSE 3001
 
-# Start the server using absolute paths to avoid any resolution issues
-CMD ["node", "/app/dist-server/server/index.js"]
+# Start using the diagnostic entrypoint script
+# This script will log the environment and file list before starting the server
+ENTRYPOINT ["sh", "/app/diagnostic.sh"]
