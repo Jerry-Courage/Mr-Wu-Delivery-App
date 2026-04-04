@@ -207,11 +207,16 @@ export class Storage implements IStorage {
     return order;
   }
 
-  async getOrderById(id: number): Promise<(Order & { items: OrderItem[] }) | null> {
+  async getOrderById(id: number): Promise<(Order & { items: OrderItem[]; rider?: { id: number; name: string } | null }) | null> {
     const [order] = await db.select().from(orders).where(eq(orders.id, id));
     if (!order) return null;
     const items = await db.select().from(orderItems).where(eq(orderItems.orderId, id));
-    return { ...order, items };
+    let rider: { id: number; name: string } | null = null;
+    if (order.riderId) {
+      const [r] = await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, order.riderId));
+      rider = r ?? null;
+    }
+    return { ...order, items, rider };
   }
 
   async getOrdersByUser(userId: number): Promise<(Order & { items: OrderItem[] })[]> {

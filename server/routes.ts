@@ -506,6 +506,20 @@ router.post("/ai/search", aiLimiter, async (req: AuthRequest, res) => {
   }
 });
 
+router.post("/ai/support", aiLimiter, async (req: AuthRequest, res) => {
+  try {
+    const { message, history } = req.body;
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ error: "message is required" });
+    }
+    const reply = await getSupportResponse(message, history || []);
+    res.json({ reply });
+  } catch (err) {
+    console.error("AI support error:", err);
+    res.json({ reply: "I'm here to help! Please contact us at support@mrwu.com or call our hotline for urgent issues." });
+  }
+});
+
 router.post("/ai/admin-insights", aiLimiter, auth, requireRole("admin"), async (req, res) => {
   try {
     const days = Number(req.body.days) || 30;
@@ -534,12 +548,6 @@ router.get("/admin/staff", auth, requireRole("admin"), async (_req, res) => {
 router.get("/admin/users", auth, requireRole("admin"), async (_req, res) => {
   const users = await storage.getAdminUsers();
   res.json(users);
-});
-
-router.get("/admin/stats", auth, requireRole("admin"), async (req, res) => {
-  const days = Number(req.query.days) || 30;
-  const stats = await storage.getAdminStats(days);
-  res.json(stats);
 });
 
 router.post("/admin/staff", auth, requireRole("admin"), async (req, res) => {

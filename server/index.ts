@@ -20,6 +20,9 @@ const io = new Server(httpServer, {
   pingTimeout: 5000,
 });
 
+// In-memory chat history keyed by orderId (max 100 messages per order)
+const chatHistory = new Map<number, { id: string; senderRole: string; senderName: string; text: string; timestamp: number }[]>();
+
 const PORT = process.env.SERVER_PORT || 3001;
 
 app.set("trust proxy", 1);
@@ -45,6 +48,31 @@ io.on("connection", (socket) => {
     const room = `order:${orderId}`;
     socket.join(room);
     console.log(`Socket ${socket.id} joined tracking room: ${room}`);
+  });
+
+  // Chat: join a chat room and receive message history
+  socket.on("chat:join", ({ orderId }: { orderId: number }) => {
+    const room = `order_chat:${orderId}`;
+    socket.join(room);
+    const history = chatHistory.get(orderId) || [];
+    socket.emit("chat:history", history);
+  });
+
+  // Chat: receive a message and broadcast to the chat room
+  socket.on("chat:send", ({ orderId, text, senderRole, senderName }: { orderId: number; text: string; senderRole: string; senderName: string }) => {
+    if (!text || !text.trim()) return;
+    const message = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      senderRole,
+      senderName,
+      text: text.trim(),
+      timestamp: Date.now(),
+    };
+    if (!chatHistory.has(orderId)) chatHistory.set(orderId, []);
+    const msgs = chatHistory.get(orderId)!;
+    msgs.push(message);
+    if (msgs.length > 100) msgs.splice(0, msgs.length - 100);
+    io.to(`order_chat:${orderId}`).emit("chat:message", message);
   });
 
   socket.on("disconnect", () => {
