@@ -163,6 +163,10 @@ async function initializeDatabase() {
       console.log("### DB_CHECKPOINT: Adding 'allergies' column to users...");
       sqlite.prepare("ALTER TABLE users ADD COLUMN allergies TEXT").run();
     }
+    if (!columns.includes("google_id")) {
+      console.log("### DB_CHECKPOINT: Adding 'google_id' column to users...");
+      sqlite.prepare("ALTER TABLE users ADD COLUMN google_id TEXT").run();
+    }
 
     // 2. Check/Create favorites table
     const favoritesTable = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='favorites'").get();
