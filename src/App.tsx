@@ -97,7 +97,7 @@ function AppRoutes() {
       <Route path="/checkout" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><CheckoutPage /></AppShell></ProtectedRoute>} />
       <Route path="/orders" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><OrdersPage /></AppShell></ProtectedRoute>} />
       <Route path="/tracking/:id" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><TrackingPage /></AppShell></ProtectedRoute>} />
-      <Route path="/nearby" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><NearbyPage /></AppShell></ProtectedRoute>} />
+      <Route path="/nearby" element={<ProtectedRoute allowedRoles={["customer", "kitchen", "rider"]}><AppShell><NearbyPage /></AppShell></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><ProfilePage /></AppShell></ProtectedRoute>} />
       <Route path="/help" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><HelpPage /></AppShell></ProtectedRoute>} />
       <Route path="/search" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><SearchPage /></AppShell></ProtectedRoute>} />

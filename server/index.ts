@@ -93,8 +93,15 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 if (process.env.NODE_ENV === "production" || process.env.RENDER) {
   const distPath = path.resolve(process.cwd(), "dist");
   app.use(express.static(distPath));
+  
+  // Custom SPA Fallback with strict asset protection
   app.use((req, res, next) => {
-    if (req.method === "GET" && !req.path.startsWith("/api") && !req.path.includes(".")) {
+    if (req.method === "GET" && !req.path.startsWith("/api")) {
+      // If it looks like a file (has an extension), return 404 if not found by express.static
+      if (req.path.includes(".")) {
+        return res.status(404).send("Not Found");
+      }
+      // Otherwise, serve index.html for SPA routing
       return res.sendFile(path.resolve(distPath, "index.html"));
     }
     next();

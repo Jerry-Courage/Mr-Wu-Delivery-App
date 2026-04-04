@@ -2,13 +2,13 @@ const BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 const MODELS = [
   "openrouter/auto",
-  "google/gemini-2.0-flash-exp:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
+  "openrouter/free", // New smart router for free models
+  "google/gemini-2.0-flash-lite-001:free",
   "deepseek/deepseek-r1:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "qwen/qwen-2.5-coder-32b-instruct:free",
   "mistralai/mistral-small-24b-instruct-2501:free",
-  "qwen/qwen-2.5-72b-instruct:free",
-  "meta-llama/llama-3.1-8b-instruct:free",
-  "microsoft/phi-3-medium-128k-instruct:free",
+  "google/gemini-2.0-flash-exp:free",
 ];
 
 // Track rate-limited models with a cooldown timestamp
