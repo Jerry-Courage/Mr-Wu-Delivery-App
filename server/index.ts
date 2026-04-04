@@ -1,4 +1,5 @@
 import "dotenv/config";
+console.log("### SERVER_CHECKPOINT: Starting Mr. Wu Delivery App...");
 import express from "express";
 import cors from "cors";
 import { createServer } from "http";
@@ -30,10 +31,14 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use("/uploads", express.static("public/uploads"));
 
+// Simple health check endpoint for the container orchestration
+app.get("/api/health", (_req, res) => res.json({ status: "healthy", timestamp: new Date().toISOString() }));
+
 import fs from "fs";
 import path from "path";
 const uploadDir = path.join(process.cwd(), "public", "uploads");
 if (!fs.existsSync(uploadDir)) {
+  console.log("### SERVER_CHECKPOINT: Creating uploads directory...");
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
@@ -150,14 +155,29 @@ async function seedMenuItems() {
   console.log("Menu items seeded");
 }
 
+console.log("### SERVER_CHECKPOINT: Attempting to listen on PORT:", PORT);
+
 httpServer.listen(PORT, "0.0.0.0", async () => {
-  console.log(`Backend running on http://0.0.0.0:${PORT} with WebSockets enabled`);
+  console.log(`### SERVER_SUCCESS: Backend running on 0.0.0.0:${PORT}`);
   try {
+    console.log("### SERVER_CHECKPOINT: Running initialization seeds...");
     await seedSuperAdmin();
     await seedMenuItems();
+    console.log("### SERVER_CHECKPOINT: Startup complete");
   } catch (err) {
-    console.error("Seed error:", err);
+    console.error("### SERVER_ERROR: Seed error:", err);
   }
+});
+
+// Global error handler for uncaught exceptions
+process.on("uncaughtException", (err) => {
+  console.error("### CRITICAL_ERROR: Uncaught Exception:", err);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("### CRITICAL_ERROR: Unhandled Rejection at:", promise, "reason:", reason);
+  process.exit(1);
 });
 
 export { io };

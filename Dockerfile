@@ -41,8 +41,12 @@ RUN npm install --omit=dev --no-audit --no-fund
 COPY --from=builder /app/sqlite_v2.db ./sqlite_v2.db
 COPY --from=builder /app/public/assets ./public/assets
 
-# Ensure uploads directory exists
+# Ensure uploads directory exists and set permissions
 RUN mkdir -p public/uploads
+
+# CRITICAL: Set full permissions on the database and public folders
+# This ensures SQLite can create wal/shm files even if the container user is non-root
+RUN chmod -R 777 .
 
 # Set environment to production
 ENV NODE_ENV=production
@@ -50,5 +54,5 @@ ENV PORT=3001
 
 EXPOSE 3001
 
-# Start the server using node directly from the High-Performance CJS bundle
+# Start the server
 CMD ["node", "dist-server/index.cjs"]
