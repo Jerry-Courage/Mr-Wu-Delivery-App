@@ -48,12 +48,12 @@ const SupportChat = ({ isOpen, onClose }: SupportChatProps) => {
 
     try {
       const history = messages.slice(-5); // Send last 5 for context
-      const res = await api.post<{ response: string }>("/ai/support", { 
+      const res = await api.post<{ reply: string }>("/ai/support", { 
         message: input,
         history 
       });
       
-      setMessages(prev => [...prev, { role: "assistant", content: res.response }]);
+      setMessages(prev => [...prev, { role: "assistant", content: res.reply }]);
     } catch (err) {
       setMessages(prev => [...prev, { 
         role: "assistant", 
