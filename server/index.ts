@@ -137,6 +137,28 @@ async function seedSuperAdmin() {
   console.log("Super Admin seeded: admin@mrwu.com / mrwu-admin-2025");
 }
 
+async function seedStaffAccounts() {
+  const staff = [
+    { email: "chef@mrwu.com", name: "Chef Wu", role: "kitchen" as const },
+    { email: "rider@mrwu.com", name: "Rider Wu", role: "rider" as const }
+  ];
+
+  const passwordHash = await bcrypt.hash("mrwu-staff-2025", 10);
+  for (const s of staff) {
+    const [existing] = await db.select().from(users).where(eq(users.email, s.email));
+    if (!existing) {
+      await db.insert(users).values({
+        email: s.email,
+        passwordHash,
+        name: s.name,
+        role: s.role,
+        createdAt: new Date(),
+      });
+      console.log(`Staff seeded: ${s.email}`);
+    }
+  }
+}
+
 async function seedMenuItems() {
   const existing = await db.select().from(menuItems);
   if (existing.length > 0) return;
@@ -169,6 +191,7 @@ httpServer.listen(PORT, "0.0.0.0", async () => {
     }
     console.log("### SERVER_CHECKPOINT: Running initialization seeds...");
     await seedSuperAdmin();
+    await seedStaffAccounts();
     await seedMenuItems();
     console.log("### SERVER_CHECKPOINT: Startup complete");
   } catch (err) {

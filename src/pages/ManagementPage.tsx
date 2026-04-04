@@ -1,15 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import {
   ChefHat, Clock, CheckCircle, Bike, Package, LogOut,
-  RefreshCw, UserCheck, Sparkles, AlertTriangle, X, Flame
+  RefreshCw, UserCheck, Sparkles, AlertTriangle, X, Flame, Bell,
+  ChevronRight, Timer, UtensilsCrossed
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSocket } from "@/context/SocketContext";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 type OrderStatus = "pending" | "confirmed" | "preparing" | "ready" | "assigned" | "picked_up" | "delivered" | "cancelled";
@@ -41,25 +42,23 @@ const NEXT_LABEL: Partial<Record<OrderStatus, string>> = {
   preparing: "Mark Ready",
 };
 
-const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; bg: string; dot: string }> = {
-  pending:   { label: "Pending",      color: "text-amber-700 dark:text-amber-400",   bg: "bg-amber-50 dark:bg-amber-900/20",   dot: "bg-amber-500" },
-  confirmed: { label: "Confirmed",    color: "text-blue-700 dark:text-blue-400",     bg: "bg-blue-50 dark:bg-blue-900/20",     dot: "bg-blue-500" },
-  preparing: { label: "Preparing",    color: "text-orange-700 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/20", dot: "bg-orange-500" },
-  ready:     { label: "Ready",        color: "text-emerald-700 dark:text-emerald-400",bg: "bg-emerald-50 dark:bg-emerald-900/20",dot: "bg-emerald-500" },
-  assigned:  { label: "Assigned",     color: "text-violet-700 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-900/20", dot: "bg-violet-500" },
-  picked_up: { label: "Out for Delivery", color: "text-indigo-700 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/20", dot: "bg-indigo-500" },
-  delivered: { label: "Delivered",    color: "text-slate-500 dark:text-slate-400",   bg: "bg-slate-100 dark:bg-slate-800",     dot: "bg-slate-400" },
-  cancelled: { label: "Cancelled",    color: "text-red-700 dark:text-red-400",       bg: "bg-red-50 dark:bg-red-900/20",       dot: "bg-red-500" },
+const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; bg: string; dot: string; glow: string }> = {
+  pending:   { label: "Pending",      color: "text-amber-500",   bg: "bg-amber-500/10",   dot: "bg-amber-500", glow: "shadow-amber-500/20" },
+  confirmed: { label: "Confirmed",    color: "text-blue-500",     bg: "bg-blue-500/10",     dot: "bg-blue-500",  glow: "shadow-blue-500/20" },
+  preparing: { label: "Preparing",    color: "text-orange-500",  bg: "bg-orange-500/10",  dot: "bg-orange-500",glow: "shadow-orange-500/20" },
+  ready:     { label: "Ready",        color: "text-emerald-500", bg: "bg-emerald-500/10", dot: "bg-emerald-500",glow: "shadow-emerald-500/20" },
+  assigned:  { label: "Assigned",     color: "text-violet-500",   bg: "bg-violet-500/10",   dot: "bg-violet-500", glow: "shadow-violet-500/20" },
+  picked_up: { label: "Delivery",     color: "text-indigo-500",   bg: "bg-indigo-500/10",   dot: "bg-indigo-500", glow: "shadow-indigo-500/20" },
+  delivered: { label: "Delivered",    color: "text-slate-400",    bg: "bg-slate-500/10",    dot: "bg-slate-400",  glow: "shadow-slate-500/10" },
+  cancelled: { label: "Cancelled",    color: "text-red-500",      bg: "bg-red-500/10",      dot: "bg-red-500",    glow: "shadow-red-500/20" },
 };
 
 const FILTER_TABS: Array<{ key: OrderStatus | "all"; label: string }> = [
-  { key: "all",      label: "All" },
+  { key: "all",      label: "Live Orders" },
   { key: "pending",  label: "Pending" },
-  { key: "confirmed",label: "Confirmed" },
-  { key: "preparing",label: "Preparing" },
+  { key: "preparing",label: "Kitchen" },
   { key: "ready",    label: "Ready" },
   { key: "assigned", label: "Assigned" },
-  { key: "delivered",label: "Done" },
 ];
 
 function getElapsedMinutes(createdAt: string) {
@@ -75,11 +74,17 @@ const ManagementPage = () => {
   const [filter, setFilter] = useState<OrderStatus | "all">("all");
   const [assignModal, setAssignModal] = useState<{ orderId: number } | null>(null);
   const [selectedRider, setSelectedRider] = useState<number | "">("");
+  const prevOrderCount = useRef(0);
+
+  const chime = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    chime.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+  }, []);
 
   const { data: orders = [], isLoading, refetch } = useQuery<Order[]>({
     queryKey: ["/api/management/orders"],
     queryFn: () => api.get("/management/orders"),
-    refetchInterval: 15000,
+    refetchInterval: 10000,
     enabled: user?.role === "kitchen",
   });
 
@@ -98,26 +103,25 @@ const ManagementPage = () => {
   });
 
   useEffect(() => {
+    if (orders.length > prevOrderCount.current && prevOrderCount.current !== 0) {
+      chime.current?.play().catch(() => {});
+    }
+    prevOrderCount.current = orders.length;
+  }, [orders.length]);
+
+  useEffect(() => {
     if (!socket) return;
-    socket.on("new_order", (data: any) => {
+    socket.on("new_order", () => {
       queryClient.invalidateQueries({ queryKey: ["/api/management/orders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/ai/kitchen-summary"] });
-      toast({
-        title: "New Order Received!",
-        description: `Order #${String(data.orderId).padStart(5, "0")} just came in.`,
-      });
     });
     return () => { socket.off("new_order"); };
-  }, [socket, queryClient, toast]);
+  }, [socket, queryClient]);
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: OrderStatus }) =>
       api.patch(`/management/orders/${id}/status`, { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/management/orders"] });
-      toast({ title: "Order updated" });
-    },
-    onError: () => toast({ title: "Failed to update order", variant: "destructive" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/management/orders"] }),
   });
 
   const assignMutation = useMutation({
@@ -127,329 +131,400 @@ const ManagementPage = () => {
       queryClient.invalidateQueries({ queryKey: ["/api/management/orders"] });
       setAssignModal(null);
       setSelectedRider("");
-      toast({ title: "Rider assigned successfully" });
+      toast({ title: "Rider Assigned" });
     },
-    onError: () => toast({ title: "Failed to assign rider", variant: "destructive" }),
   });
 
-  const counts: Record<string, number> = { all: orders.length };
+  const counts: Record<string, number> = { all: orders.filter(o => !["delivered", "cancelled"].includes(o.status)).length };
   orders.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
 
-  const filtered = (filter === "all" ? orders : orders.filter(o => o.status === filter))
+  const filtered = (filter === "all" 
+    ? orders.filter(o => !["delivered", "cancelled"].includes(o.status)) 
+    : orders.filter(o => o.status === filter))
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-  const urgentCount = orders.filter(o =>
+  const urgentOrders = orders.filter(o =>
     !["delivered", "cancelled"].includes(o.status) && getElapsedMinutes(o.createdAt) > 15
-  ).length;
+  );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-sm">
-            <ChefHat className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-bold text-foreground text-base leading-none">Kitchen</h1>
-              {urgentCount > 0 && (
-                <span className="flex items-center gap-1 bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
-                  <AlertTriangle className="w-2.5 h-2.5" />{urgentCount} urgent
-                </span>
-              )}
+    <div className="min-h-screen bg-[#050505] text-slate-100 selection:bg-primary/30">
+      {/* Premium Glass HUD */}
+      <div className="sticky top-0 z-50 p-4">
+        <header className="bg-slate-900/40 backdrop-blur-2xl border border-white/5 rounded-[2rem] px-6 py-4 shadow-2xl flex items-center justify-between overflow-hidden relative">
+          {/* Animated Gradient Background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50" />
+          
+          <div className="relative flex items-center gap-4">
+            <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center border border-primary/20 group">
+              <ChefHat className="w-6 h-6 text-primary group-hover:scale-110 transition-transform duration-500" />
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">{user?.name}</p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-black text-xl tracking-tight uppercase italic italic-shadow">Mr Wu Kitchen</h1>
+                <div className="flex items-center gap-1.5 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Live Flow</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-white/40 uppercase font-bold tracking-[0.2em] mt-0.5">Automated Command Center</p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-1">
-          <button onClick={() => refetch()} className="w-9 h-9 rounded-xl hover:bg-muted flex items-center justify-center text-muted-foreground transition-colors">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-          <button onClick={() => { logout(); navigate("/login"); }} className="w-9 h-9 rounded-xl hover:bg-muted flex items-center justify-center text-muted-foreground transition-colors">
-            <LogOut className="w-4 h-4" />
-          </button>
-        </div>
-      </header>
 
-      {/* Stats Row */}
-      <div className="px-4 pt-4 pb-3 grid grid-cols-4 gap-2">
-        {[
-          { label: "Pending",    key: "pending",   Icon: Clock,         color: "text-amber-500",   ring: "ring-amber-200 dark:ring-amber-800" },
-          { label: "Cooking",    key: "preparing",  Icon: Flame,         color: "text-orange-500",  ring: "ring-orange-200 dark:ring-orange-800" },
-          { label: "Ready",      key: "ready",      Icon: CheckCircle,   color: "text-emerald-500", ring: "ring-emerald-200 dark:ring-emerald-800" },
-          { label: "En Route",   key: "picked_up",  Icon: Bike,          color: "text-indigo-500",  ring: "ring-indigo-200 dark:ring-indigo-800" },
-        ].map(({ label, key, Icon, color, ring }) => (
-          <div key={key} className={cn("bg-card rounded-2xl p-2.5 border border-border text-center ring-1", ring)}>
-            <Icon className={cn("w-4 h-4 mx-auto mb-1", color)} />
-            <p className="text-lg font-black text-foreground leading-none">{counts[key] || 0}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{label}</p>
+          <div className="relative flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-6 px-6 border-r border-white/5 mr-3">
+              <div className="text-center">
+                <p className="text-[10px] text-white/30 uppercase font-black tracking-widest">Active</p>
+                <p className="text-xl font-black text-white">{counts.all}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[10px] text-white/30 uppercase font-black tracking-widest">Urgent</p>
+                <p className="text-xl font-black text-red-500">{urgentOrders.length}</p>
+              </div>
+            </div>
+            
+            <button onClick={() => refetch()} className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all active:scale-90 border border-white/5">
+              <RefreshCw className="w-4 h-4 text-white/60" />
+            </button>
+            <button onClick={() => { logout(); navigate("/login"); }} className="w-10 h-10 rounded-2xl bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center transition-all group border border-red-500/10">
+              <LogOut className="w-4 h-4 text-red-500" />
+            </button>
           </div>
+        </header>
+      </div>
+
+      {/* Kinetic Stats Section */}
+      <div className="px-6 py-2 grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "New Queue",    key: "pending",   Icon: Bell,         color: "text-amber-500",   gradient: "from-amber-500/20 to-transparent" },
+          { label: "On Fire",      key: "preparing",  Icon: Flame,         color: "text-orange-500",  gradient: "from-orange-500/20 to-transparent" },
+          { label: "Ready to Go",  key: "ready",      Icon: Package,       color: "text-emerald-500", gradient: "from-emerald-500/20 to-transparent" },
+          { label: "In Transit",   key: "picked_up",  Icon: Bike,          color: "text-indigo-500",  gradient: "from-indigo-500/20 to-transparent" },
+        ].map(({ label, key, Icon, color, gradient }) => (
+          <motion.div 
+            whileHover={{ y: -4, scale: 1.02 }}
+            key={key} 
+            className={cn("relative overflow-hidden bg-white/[0.03] rounded-3xl p-5 border border-white/[0.05] group cursor-default transition-all duration-500")}
+          >
+            <div className={cn("absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-700", gradient)} />
+            <div className="relative z-10">
+              <Icon className={cn("w-5 h-5 mb-3", color)} />
+              <p className="text-3xl font-black text-white leading-none tracking-tighter">{counts[key] || 0}</p>
+              <p className="text-[11px] text-white/40 font-bold uppercase tracking-widest mt-2">{label}</p>
+            </div>
+            <div className="absolute -right-2 -bottom-2 opacity-10 group-hover:opacity-20 transition-opacity rotate-12 group-hover:scale-125 duration-700">
+               <Icon size={80} />
+            </div>
+          </motion.div>
         ))}
       </div>
 
-      {/* AI Briefing */}
-      <div className="px-4 pb-3">
-        <div className="bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-3.5 flex items-start gap-3">
-          <div className="w-8 h-8 bg-primary/15 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-            <Sparkles className="w-4 h-4 text-primary" />
+      {/* AI Pulse Intelligence */}
+      <div className="px-6 py-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-[2rem] p-6 relative overflow-hidden group"
+        >
+          <div className="absolute top-0 right-0 p-8 opacity-20 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
+             <Sparkles size={120} className="text-primary" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">AI Kitchen Briefing</p>
-            {aiLoading ? (
-              <div className="space-y-1.5">
-                <div className="h-3 bg-primary/10 animate-pulse rounded-full w-full" />
-                <div className="h-3 bg-primary/10 animate-pulse rounded-full w-3/4" />
-              </div>
-            ) : (
-              <p className="text-sm text-foreground leading-snug">{aiSummary?.summary || "Analysing kitchen status..."}</p>
+          
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-10 h-10 bg-primary/20 rounded-2xl flex items-center justify-center relative">
+               <Sparkles className="w-5 h-5 text-primary animate-pulse" />
+               <div className="absolute inset-0 rounded-2xl bg-primary/20 animate-ping opacity-20" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Neural Kitchen Intelligence</p>
+              <p className="text-sm font-bold text-white/80">Real-time Efficiency Stream</p>
+            </div>
+          </div>
+          
+          {aiLoading ? (
+            <div className="space-y-3">
+              <div className="h-4 bg-white/5 animate-pulse rounded-full w-full" />
+              <div className="h-4 bg-white/5 animate-pulse rounded-full w-2/3" />
+            </div>
+          ) : (
+            <p className="text-base text-white/70 leading-relaxed font-medium italic italic-shadow">
+              "{aiSummary?.summary || "Analysing current kitchen velocity and order distribution..."}"
+            </p>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Kinetic Filter Navigation */}
+      <div className="px-6 py-4 flex gap-4 overflow-x-auto no-scrollbar">
+        {FILTER_TABS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setFilter(key)}
+            className={cn(
+              "group relative px-6 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all",
+              filter === key
+                ? "bg-primary text-primary-foreground shadow-[0_0_20px_rgba(var(--primary),0.3)]"
+                : "bg-white/5 text-white/40 hover:bg-white/10 hover:text-white"
             )}
-          </div>
-        </div>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="px-4 pb-3 flex gap-2 overflow-x-auto no-scrollbar">
-        {FILTER_TABS.map(({ key, label }) => {
-          const count = counts[key] ?? 0;
-          const cfg = key !== "all" ? STATUS_CONFIG[key as OrderStatus] : null;
-          return (
-            <button
-              key={key}
-              onClick={() => setFilter(key)}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border",
-                filter === key
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-card text-muted-foreground border-border hover:border-primary/40"
-              )}
-            >
-              {cfg && <span className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />}
+          >
+            <span className="relative z-10 flex items-center gap-3">
               {label}
-              {count > 0 && (
-                <span className={cn(
-                  "min-w-4 h-4 px-1 rounded-full text-[10px] font-black flex items-center justify-center",
-                  filter === key ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
-                )}>{count}</span>
-              )}
-            </button>
-          );
-        })}
+              <span className={cn(
+                "w-5 h-5 rounded-lg flex items-center justify-center text-[10px]",
+                filter === key ? "bg-white/20 text-white" : "bg-white/5 text-white/20"
+              )}>
+                {counts[key] ?? 0}
+              </span>
+            </span>
+          </button>
+        ))}
       </div>
 
-      {/* Orders */}
-      <div className="px-4 pb-10 space-y-3">
+      {/* Grid of Kinetic Orders */}
+      <div className="px-6 pb-20">
         {isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="bg-card rounded-2xl h-44 animate-pulse border border-border" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="bg-white/5 rounded-[2.5rem] h-64 animate-pulse border border-white/5" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 bg-card border border-border rounded-2xl">
-            <Package className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="font-semibold text-foreground">No orders here</p>
-            <p className="text-sm text-muted-foreground mt-1">Orders will appear as they come in</p>
+          <div className="text-center py-24 bg-white/[0.02] border border-dashed border-white/10 rounded-[3rem]">
+            <UtensilsCrossed className="w-16 h-16 text-white/5 mx-auto mb-6" />
+            <p className="text-xl font-bold text-white/40 uppercase tracking-widest">No Active Commands</p>
           </div>
         ) : (
-          <AnimatePresence>
-            {filtered.map((order, idx) => {
-              const elapsed = getElapsedMinutes(order.createdAt);
-              const isUrgent = elapsed > 15 && !["delivered", "cancelled"].includes(order.status);
-              const nextStatus = NEXT_STATUS[order.status];
-              const canAssign = order.status === "ready" && !order.riderId;
-              const cfg = STATUS_CONFIG[order.status];
-              const formattedTime = new Date(order.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          <LayoutGroup>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <AnimatePresence mode="popLayout">
+                {filtered.map((order, idx) => {
+                  const elapsed = getElapsedMinutes(order.createdAt);
+                  const isUrgent = elapsed > 15 && !["delivered", "cancelled"].includes(order.status);
+                  const nextStatus = NEXT_STATUS[order.status];
+                  const cfg = STATUS_CONFIG[order.status];
+                  const formattedTime = new Date(order.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-              return (
-                <motion.div
-                  key={order.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.03 }}
-                  className={cn(
-                    "bg-card rounded-2xl overflow-hidden border transition-all",
-                    isUrgent ? "border-red-400 dark:border-red-600 shadow-[0_0_0_1px] shadow-red-200 dark:shadow-red-900" : "border-border"
-                  )}
-                >
-                  {/* Urgent Banner */}
-                  {isUrgent && (
-                    <div className="flex items-center gap-2 bg-red-500 px-4 py-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-white" />
-                      <p className="text-white text-xs font-bold">Waiting {elapsed} min — Needs attention!</p>
-                    </div>
-                  )}
+                  return (
+                    <motion.div
+                      layout
+                      key={order.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                      className={cn(
+                        "group relative bg-[#0a0a0a] rounded-[2.5rem] border overflow-hidden transition-all duration-700",
+                        isUrgent 
+                          ? "border-red-500/50 shadow-[0_0_40px_rgba(239,68,68,0.15)] ring-1 ring-red-500/20" 
+                          : "border-white/5 hover:border-white/20 shadow-xl"
+                      )}
+                    >
+                      {/* Urgency Flicker Background */}
+                      {isUrgent && (
+                        <div className="absolute inset-0 bg-red-500/[0.02] animate-pulse" />
+                      )}
 
-                  {/* Card Header */}
-                  <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <p className="font-black text-foreground text-base leading-none">
-                          #{String(order.id).padStart(5, "0")}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {order.customer.name} · {formattedTime}
-                          {!isUrgent && (
-                            <span className="ml-1 text-muted-foreground/60">· {elapsed}m ago</span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                    <span className={cn("flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full", cfg.bg, cfg.color)}>
-                      <span className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
-                      {cfg.label}
-                    </span>
-                  </div>
-
-                  {/* Items */}
-                  <div className="px-4 py-3 space-y-1.5">
-                    {order.items.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 bg-primary/10 text-primary text-xs font-bold rounded-md flex items-center justify-center">
-                            {item.quantity}
-                          </span>
-                          <span className="text-foreground font-medium">{item.name}</span>
-                          {item.specialInstructions && (
-                            <span className="text-xs text-amber-600 dark:text-amber-400 italic">({item.specialInstructions})</span>
-                          )}
+                      {/* Header Section */}
+                      <div className="p-6 pb-4 flex items-start justify-between relative z-10">
+                        <div>
+                          <div className="flex items-center gap-3 mb-1">
+                             <h3 className="text-2xl font-black tracking-tighter text-white uppercase italic italic-shadow">
+                               ORDER #{String(order.id).slice(-4)}
+                             </h3>
+                             {isUrgent && <Flame className="w-5 h-5 text-red-500 animate-bounce" />}
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] font-black text-white/30 uppercase tracking-[0.1em]">
+                             <Clock className="w-3 h-3" />
+                             <span>Recieved {formattedTime}</span>
+                             <span className="w-1 h-1 bg-white/20 rounded-full" />
+                             <span className={cn(isUrgent ? "text-red-500" : "text-primary")}>{elapsed} Min Elapsed</span>
+                          </div>
                         </div>
-                        <span className="text-muted-foreground text-xs">
-                          GH₵{(parseFloat(item.price) * item.quantity).toFixed(2)}
-                        </span>
-                      </div>
-                    ))}
-                    {order.notes && (
-                      <div className="flex items-start gap-2 mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-amber-700 dark:text-amber-300">{order.notes}</p>
-                      </div>
-                    )}
-                    <div className="pt-2 border-t border-border flex items-center justify-between">
-                      <p className="text-xs text-muted-foreground">📍 {order.deliveryAddress}</p>
-                      <p className="text-sm font-bold text-foreground">GH₵{parseFloat(order.total).toFixed(2)}</p>
-                    </div>
-                    {order.rider && (
-                      <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">🛵 {order.rider.name} assigned</p>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  {(nextStatus || canAssign || (!["delivered", "cancelled", "picked_up", "assigned"].includes(order.status) && !nextStatus)) && (
-                    <div className="px-4 pb-4 flex gap-2">
-                      {nextStatus && (
-                        <button
-                          onClick={() => statusMutation.mutate({ id: order.id, status: nextStatus })}
-                          disabled={statusMutation.isPending}
-                          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold py-2.5 rounded-xl transition-colors disabled:opacity-60 shadow-sm"
-                        >
-                          {NEXT_LABEL[order.status]}
-                        </button>
-                      )}
-                      {canAssign && (
-                        <button
-                          onClick={() => setAssignModal({ orderId: order.id })}
-                          className="flex-1 flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold py-2.5 rounded-xl transition-colors shadow-sm"
-                        >
-                          <UserCheck className="w-4 h-4" /> Assign Rider
-                        </button>
-                      )}
-                      {order.status === "ready" && order.riderId && (
-                        <div className="flex-1 flex items-center justify-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-sm font-semibold py-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                          <CheckCircle className="w-4 h-4" /> Rider Assigned
+                        <div className={cn("px-4 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-[0.2em] shadow-lg", cfg.bg, cfg.color, "border-white/5")}>
+                           {cfg.label}
                         </div>
-                      )}
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                      </div>
+
+                      {/* Items Body */}
+                      <div className="px-6 py-2 space-y-3 relative z-10">
+                         <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                           {order.items.map((item, i) => (
+                             <div key={i} className="flex items-center justify-between group/item">
+                               <div className="flex items-center gap-4">
+                                  <div className="w-8 h-8 bg-white/5 rounded-xl flex items-center justify-center text-sm font-black text-white border border-white/5 group-hover/item:bg-primary group-hover/item:text-primary-foreground transition-all">
+                                    {item.quantity}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-bold text-white group-hover/item:text-primary transition-colors">{item.name}</p>
+                                    {item.specialInstructions && (
+                                      <p className="text-[11px] text-amber-500 font-bold italic italic-shadow">★ {item.specialInstructions}</p>
+                                    )}
+                                  </div>
+                               </div>
+                               <ChevronRight className="w-3 h-3 text-white/20 group-hover/item:text-primary group-hover/item:translate-x-1 transition-all" />
+                             </div>
+                           ))}
+                         </div>
+
+                         {order.notes && (
+                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 flex gap-3">
+                               <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                               <p className="text-xs font-bold text-amber-500 italic-shadow">{order.notes}</p>
+                            </div>
+                         )}
+                      </div>
+
+                      {/* Customer Info Mini-Bar */}
+                      <div className="px-6 py-4 mt-2 flex items-center justify-between border-t border-white/5 bg-white/[0.02]">
+                         <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
+                               <UserCheck className="w-3 h-3 text-white/40" />
+                            </div>
+                            <div>
+                               <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Customer</p>
+                               <p className="text-[11px] font-bold text-white">{order.customer.name}</p>
+                            </div>
+                         </div>
+                         <div className="text-right">
+                            <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Location</p>
+                            <p className="text-[11px] font-bold text-white flex items-center gap-1">
+                               <Timer className="w-3 h-3 text-primary" />
+                               {order.id % 2 === 0 ? "Fast Zone" : "Tier 1"}
+                            </p>
+                         </div>
+                      </div>
+
+                      {/* Kinetic Action Space */}
+                      <div className="p-6 pt-2">
+                        {nextStatus ? (
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => statusMutation.mutate({ id: order.id, status: nextStatus })}
+                            disabled={statusMutation.isPending}
+                            className="w-full relative group/btn h-14 bg-primary rounded-2xl overflow-hidden shadow-2xl transition-all"
+                          >
+                             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
+                             <span className="relative z-10 flex items-center justify-center gap-3 text-primary-foreground font-black uppercase tracking-[0.2em] italic">
+                                {NEXT_LABEL[order.status]}
+                                <ChevronRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
+                             </span>
+                          </motion.button>
+                        ) : order.status === "ready" && !order.riderId ? (
+                           <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setAssignModal({ orderId: order.id })}
+                            className="w-full h-14 bg-violet-600 rounded-2xl group/btn overflow-hidden shadow-2xl relative"
+                          >
+                             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
+                             <span className="relative z-10 flex items-center justify-center gap-3 text-white font-black uppercase tracking-[0.2em] italic">
+                                <Bike className="w-5 h-5" />
+                                Assign Dispatch
+                             </span>
+                          </motion.button>
+                        ) : (
+                          <div className="h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-[10px] font-black text-white/30 uppercase tracking-[0.4em]">
+                             Waiting for Rider
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          </LayoutGroup>
         )}
       </div>
 
-      {/* Assign Rider Modal */}
+      {/* AMOLED Rider Modal */}
       <AnimatePresence>
         {assignModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4"
+            className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-6"
             onClick={() => setAssignModal(null)}
           >
             <motion.div
-              initial={{ y: 40, opacity: 0 }}
+              initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 40, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="bg-card rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl"
+              exit={{ y: 100, opacity: 0 }}
+              className="bg-[#0a0a0a] border border-white/10 rounded-[3rem] w-full max-w-md overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)]"
               onClick={e => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
-                <div>
-                  <h3 className="font-bold text-foreground text-lg">Assign Rider</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Order #{String(assignModal.orderId).padStart(5, "0")}</p>
+              <div className="px-8 pt-8 pb-4">
+                <div className="flex items-center justify-between mb-8">
+                   <div>
+                     <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic">Dispatch Order</h2>
+                     <p className="text-xs font-bold text-white/30 tracking-[0.4em] uppercase mt-1">Select Rider Team</p>
+                   </div>
+                   <button onClick={() => setAssignModal(null)} className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+                      <X className="w-6 h-6 text-white/60" />
+                   </button>
                 </div>
-                <button onClick={() => setAssignModal(null)} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                  <X className="w-4 h-4 text-muted-foreground" />
-                </button>
-              </div>
 
-              <div className="p-5">
-                {riders.length === 0 ? (
-                  <p className="text-muted-foreground text-sm text-center py-4">No riders registered yet.</p>
-                ) : (
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {riders.map(rider => (
-                      <label
-                        key={rider.id}
-                        className={cn(
-                          "flex items-center gap-3 p-3.5 rounded-xl cursor-pointer border transition-all",
-                          selectedRider === rider.id
-                            ? "border-primary bg-primary/5"
-                            : "border-border bg-muted/50 hover:border-primary/40"
-                        )}
-                      >
-                        <input
-                          type="radio"
-                          name="rider"
-                          value={rider.id}
-                          checked={selectedRider === rider.id}
-                          onChange={() => setSelectedRider(rider.id)}
-                          className="accent-primary"
-                        />
-                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Bike className="w-4 h-4 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-foreground text-sm">{rider.name}</p>
-                          <p className="text-xs text-muted-foreground">{rider.phone || rider.email}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                )}
-                <div className="flex gap-2 mt-4">
-                  <button
-                    onClick={() => { setAssignModal(null); setSelectedRider(""); }}
-                    className="flex-1 border border-border text-foreground py-3 rounded-xl text-sm font-semibold hover:bg-muted transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
+                <div className="space-y-3 max-h-[40vh] overflow-y-auto no-scrollbar pr-1">
+                   {riders.map(rider => (
+                     <label
+                       key={rider.id}
+                       className={cn(
+                        "group relative flex items-center gap-4 p-5 rounded-[2rem] border cursor-pointer transition-all duration-500",
+                        selectedRider === rider.id 
+                          ? "border-primary bg-primary/10 shadow-[0_0_30px_rgba(var(--primary),0.1)]" 
+                          : "border-white/5 bg-white/[0.02] hover:border-white/20"
+                       )}
+                     >
+                       <input 
+                         type="radio" 
+                         className="hidden" 
+                         checked={selectedRider === rider.id} 
+                         onChange={() => setSelectedRider(rider.id)} 
+                       />
+                       <div className={cn(
+                         "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500",
+                         selectedRider === rider.id ? "bg-primary text-primary-foreground" : "bg-white/5 text-white/20 group-hover:text-white"
+                       )}>
+                          <Bike />
+                       </div>
+                       <div className="flex-1">
+                          <p className="font-black text-white uppercase italic tracking-tighter text-lg leading-none">{rider.name}</p>
+                          <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mt-1">{rider.phone || "Active Duty"}</p>
+                       </div>
+                       {selectedRider === rider.id && (
+                          <motion.div layoutId="select-indicator">
+                             <CheckCircle className="text-primary w-6 h-6" />
+                          </motion.div>
+                       )}
+                     </label>
+                   ))}
+                </div>
+
+                <div className="flex gap-4 mt-8 pb-4">
+                   <button 
                     disabled={!selectedRider || assignMutation.isPending}
                     onClick={() => selectedRider && assignMutation.mutate({ orderId: assignModal.orderId, riderId: selectedRider as number })}
-                    className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl text-sm font-bold disabled:opacity-50 shadow-sm transition-colors"
-                  >
-                    {assignMutation.isPending ? "Assigning..." : "Assign Rider"}
-                  </button>
+                    className="flex-1 h-14 bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] italic rounded-2xl disabled:opacity-30 shadow-2xl transition-all active:scale-95"
+                   >
+                     Confirm Dispatch
+                   </button>
                 </div>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <style>{`
+        .italic-shadow { text-shadow: 2px 2px 0px rgba(0,0,0,0.5); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(var(--primary),0.4); border-radius: 10px; }
+      `}</style>
     </div>
   );
 };

@@ -107807,18 +107807,21 @@ var storage = new Storage();
 var BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
 var MODELS = [
   "openrouter/auto",
+  "google/gemini-2.0-flash-lite-preview-02-05:free",
   "google/gemma-3-4b-it:free",
-  "meta-llama/llama-3.2-3b-instruct:free",
-  "qwen/qwen3-coder:free",
-  "arcee-ai/trinity-mini:free",
-  "liquid/lfm-2.5-1.2b-instruct:free",
-  "nvidia/nemotron-nano-9b-v2:free"
+  "meta-llama/llama-3.2-11b-vision-instruct:free",
+  "deepseek/deepseek-chat:free",
+  "qwen/qwen2.5-7b-instruct:free",
+  "mistralai/mistral-7b-instruct:free"
 ];
 var rateLimitedUntil = {};
 var COOLDOWN_MS = 10 * 60 * 1e3;
 function getKey() {
   const key = process.env.OPENROUTER_API_KEY;
-  if (!key) throw new Error("OPENROUTER_API_KEY not set");
+  if (!key) {
+    console.error("### AI_ERROR: OPENROUTER_API_KEY is not set in the environment!");
+    throw new Error("OPENROUTER_API_KEY not set");
+  }
   return key;
 }
 function getAvailableModels() {
@@ -107851,7 +107854,7 @@ async function chat(messages) {
         body: JSON.stringify({
           model: modelId,
           messages: sanitizedMessages,
-          max_tokens: 400,
+          max_tokens: 150,
           temperature: 0.7
         })
       });
@@ -107881,23 +107884,20 @@ async function chat(messages) {
       continue;
     }
   }
+  const errorMessage = lastError ? lastError.message : "All AI models failed";
+  console.error(`### AI_FATAL: ${errorMessage}`);
   throw lastError || new Error("All AI models failed");
 }
 async function getRecommendations(menuItems2, recentOrders, timeOfDay) {
   const menuText = menuItems2.map((i) => `ID:${i.id} "${i.name}" (${i.category}, $${i.price}${i.tags?.length ? ", " + i.tags.join("/") : ""})`).join("\n");
   const historyText = recentOrders.length > 0 ? recentOrders.slice(0, 3).map((o) => o.items.map((i) => i.name).join(", ")).join(" | ") : "No previous orders";
-  const prompt = `You are an AI food recommender for Mr Wu's Chinese delivery restaurant.
-
-Menu:
+  const prompt = `Menu:
 ${menuText}
-
-Customer's recent orders: ${historyText}
-Time of day: ${timeOfDay}
-
-Pick the 4 best items to recommend. Respond with valid JSON only, no markdown:
-[{"id":"1","name":"General Tso's Chicken","reason":"Your top rated pick","confidence":0.95}]`;
+Orders: ${historyText}
+Time: ${timeOfDay}
+Respond with 4 best JSON recommendations only: [{"id":"1","name":"Item","reason":"reason","confidence":0.95}]`;
   const response = await chat([
-    { role: "system", content: "You are a food recommendation AI. Always respond with valid JSON arrays only." },
+    { role: "system", content: "You are a food recommender. Respond with JSON arrays only." },
     { role: "user", content: prompt }
   ]);
   try {
@@ -107957,14 +107957,12 @@ Give a 1-2 sentence briefing. Flag orders waiting >15 min. Be concise.`;
 }
 async function searchMenu(query, menuItems2) {
   const menuText = menuItems2.map((i) => `ID:${i.id} "${i.name}" (${i.category}, $${i.price}) - ${i.description}${i.tags?.length ? " [" + i.tags.join(", ") + "]" : ""}`).join("\n");
-  const prompt = `Menu assistant at Mr Wu's.
-Menu:
+  const prompt = `Menu:
 ${menuText}
 Query: "${query}"
-Find best matches. Return valid JSON only:
-{"message":"Here are some options!","itemIds":[1,3]}`;
+Respond with best matches as valid JSON only: {"message":"Msg","itemIds":[1,3]}`;
   const response = await chat([
-    { role: "system", content: "You are a helpful restaurant food assistant. Always respond with valid JSON only." },
+    { role: "system", content: "You are a restaurant assistant. Always respond with valid JSON only." },
     { role: "user", content: prompt }
   ]);
   try {
@@ -108395,7 +108393,7 @@ router.post("/ai/support", aiLimiter, async (req, res) => {
     const reply = await getSupportResponse(message, history || []);
     res.json({ reply });
   } catch (err) {
-    console.error("AI support error:", err);
+    console.error("### AI_SUPPORT_ROUTE_ERROR:", err);
     res.json({ reply: "I'm here to help! Please contact us at support@mrwu.com or call our hotline for urgent issues." });
   }
 });
@@ -108528,10 +108526,11 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 if (process.env.NODE_ENV === "production" || process.env.RENDER) {
   const distPath = import_path3.default.resolve(process.cwd(), "dist");
   app.use(import_express2.default.static(distPath));
-  app.get("*", (req, res) => {
-    if (!req.path.startsWith("/api")) {
-      res.sendFile(import_path3.default.resolve(distPath, "index.html"));
+  app.use((req, res, next) => {
+    if (req.method === "GET" && !req.path.startsWith("/api") && !req.path.includes(".")) {
+      return res.sendFile(import_path3.default.resolve(distPath, "index.html"));
     }
+    next();
   });
 }
 app.use((err, _req, res, _next) => {
@@ -108586,6 +108585,12 @@ console.log("### SERVER_CHECKPOINT: Attempting to listen on PORT:", PORT);
 httpServer.listen(PORT, "0.0.0.0", async () => {
   console.log(`### SERVER_SUCCESS: Backend running on 0.0.0.0:${PORT}`);
   try {
+    const aiKey = process.env.OPENROUTER_API_KEY;
+    if (aiKey) {
+      console.log(`### AI_CHECK: Key detected (Ends with ...${aiKey.slice(-4)})`);
+    } else {
+      console.error("### AI_CHECK: No OPENROUTER_API_KEY detected in environment!");
+    }
     console.log("### SERVER_CHECKPOINT: Running initialization seeds...");
     await seedSuperAdmin();
     await seedMenuItems();
