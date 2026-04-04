@@ -27,8 +27,9 @@ function parseExtras(extras: string | null): string[] {
 
 export interface IStorage {
   // Auth
-  createUser(data: { email: string; password: string; name: string; phone?: string; role?: (typeof roles)[number]; address?: string }): Promise<User>;
+  createUser(data: { email: string; password?: string; googleId?: string; name: string; phone?: string; role?: (typeof roles)[number]; address?: string }): Promise<User>;
   getUserByEmail(email: string): Promise<User | null>;
+  getUserByGoogleId(googleId: string): Promise<User | null>;
   getUserById(id: number): Promise<User | null>;
   validatePassword(user: User, password: string): Promise<boolean>;
   getUsersByRole(role: string): Promise<User[]>;
@@ -87,11 +88,12 @@ export interface IStorage {
 }
 
 export class Storage implements IStorage {
-  async createUser(data: { email: string; password: string; name: string; phone?: string; role?: (typeof roles)[number]; address?: string }): Promise<User> {
-    const passwordHash = await bcrypt.hash(data.password, 10);
+  async createUser(data: { email: string; password?: string; googleId?: string; name: string; phone?: string; role?: (typeof roles)[number]; address?: string }): Promise<User> {
+    const passwordHash = data.password ? await bcrypt.hash(data.password, 10) : null;
     const [user] = await db.insert(users).values({
       email: data.email,
       passwordHash,
+      googleId: data.googleId ?? null,
       name: data.name,
       phone: data.phone,
       role: data.role ?? "customer",
@@ -107,13 +109,19 @@ export class Storage implements IStorage {
     return user ?? null;
   }
 
+  async getUserByGoogleId(googleId: string): Promise<User | null> {
+    const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
+    return user ?? null;
+  }
+
   async getUserById(id: number): Promise<User | null> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user ?? null;
   }
 
   async validatePassword(user: User, password: string): Promise<boolean> {
-    return bcrypt.compare(password, user.passwordHash);
+    if (!user.passwordHash) return false;
+    return bcrypt.compare(password, user.passwordHash as string);
   }
 
   async getUsersByRole(role: string): Promise<User[]> {

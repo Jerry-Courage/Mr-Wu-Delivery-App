@@ -35,11 +35,13 @@ const queryClient = new QueryClient({
   },
 });
 
+import SplashScreen from "./components/ui/SplashScreen";
+
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-muted-foreground font-medium">Loading Mr Wu's App...</p></div>;
+  if (loading) return <SplashScreen />;
   
   if (!user) {
     return <Navigate to="/" state={{ from: location.pathname }} replace />;
@@ -62,7 +64,7 @@ function RootRoute() {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-muted-foreground font-medium">Loading Mr Wu's App...</p></div>;
+  if (loading) return <SplashScreen />;
   
   if (!user) {
     return <OnboardingPage />;
@@ -83,6 +85,8 @@ function RootRoute() {
   return <Navigate to={roleHome[user.role] || "/home"} replace />;
 }
 
+import RiderOnboardingPage from "./pages/RiderOnboardingPage";
+
 function AppRoutes() {
   const customerOnly = ["customer"];
 
@@ -90,6 +94,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<RootRoute />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
+      <Route path="/rider-onboarding" element={<RiderOnboardingPage />} />
       <Route path="/login" element={<LoginPage />} />
       
       {/* Customer Routes */}
@@ -141,22 +146,26 @@ function AppRoutes() {
   );
 }
 
+import { GoogleOAuthProvider } from "@react-oauth/google";
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <SocketProvider>
-          <CartProvider>
-            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-              <AppRoutes />
-            </BrowserRouter>
-          </CartProvider>
-        </SocketProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "PASTE_YOUR_GOOGLE_CLIENT_ID_HERE"}>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
+          <SocketProvider>
+            <CartProvider>
+              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <AppRoutes />
+              </BrowserRouter>
+            </CartProvider>
+          </SocketProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </GoogleOAuthProvider>
 );
 
 export default App;

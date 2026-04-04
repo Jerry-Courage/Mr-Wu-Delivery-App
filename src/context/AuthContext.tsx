@@ -17,6 +17,7 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
+  loginWithGoogle: (credential: string) => Promise<AuthUser>;
   register: (data: { email: string; password: string; name: string; phone?: string; role?: string; address?: string; adminSecret?: string }) => Promise<AuthUser>;
   logout: () => void;
   updateUser: (data: { name?: string; phone?: string; address?: string; allergies?: string }) => Promise<AuthUser>;
@@ -58,6 +59,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return res.user;
   };
 
+  const loginWithGoogle = async (credential: string) => {
+    const res = await api.post<{ token: string; user: AuthUser }>("/auth/google", { credential });
+    localStorage.setItem("auth_token", res.token);
+    setToken(res.token);
+    setUser(res.user);
+    return res.user;
+  };
+
   const register = async (data: { email: string; password: string; name: string; phone?: string; role?: string; address?: string; adminSecret?: string }) => {
     const res = await api.post<{ token: string; user: AuthUser }>("/auth/register", data);
     localStorage.setItem("auth_token", res.token);
@@ -79,7 +88,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

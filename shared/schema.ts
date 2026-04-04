@@ -19,7 +19,8 @@ export const orderStatuses = [
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
+  passwordHash: text("password_hash"), // Optional for OAuth users
+  googleId: text("google_id").unique(), // For Google OAuth
   name: text("name").notNull(),
   phone: text("phone"),
   role: text("role", { enum: roles }).notNull().default("customer"),
@@ -89,7 +90,8 @@ export const favorites = sqliteTable("favorites", {
 
 export const insertUserSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(6).optional(),
+  googleId: z.string().optional(),
   name: z.string().min(1),
   phone: z.string().optional(),
   role: z.enum(roles).optional(),

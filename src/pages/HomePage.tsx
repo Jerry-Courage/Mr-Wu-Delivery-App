@@ -48,6 +48,9 @@ interface Order {
   items: { name: string; quantity: number }[];
 }
 
+import SupportChat from "@/components/support/SupportChat";
+import { motion, AnimatePresence } from "framer-motion";
+
 const HomePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -57,6 +60,7 @@ const HomePage = () => {
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [tempAddress, setTempAddress] = useState("");
   const [manualAddress, setManualAddress] = useState<string | null>(null);
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
 
   const displayAddress = manualAddress || location.address || "Main St, 123";
 
@@ -335,6 +339,28 @@ const HomePage = () => {
           <Plus className="w-5 h-5" /> Start New Order
         </button>
       </div>
+
+      {/* Floating AI Button */}
+      <div className="fixed bottom-24 right-4 z-40">
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setIsAIChatOpen(true)}
+          className="w-14 h-14 bg-primary rounded-full shadow-2xl flex items-center justify-center border-4 border-background"
+        >
+          <Sparkles className="w-6 h-6 text-primary-foreground" />
+          <motion.div
+            animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="absolute inset-0 bg-primary rounded-full -z-10"
+          />
+        </motion.button>
+      </div>
+
+      <SupportChat 
+        isOpen={isAIChatOpen} 
+        onClose={() => setIsAIChatOpen(false)} 
+      />
     </div>
   );
 };
