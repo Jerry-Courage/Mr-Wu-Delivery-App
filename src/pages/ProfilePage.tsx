@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import logo from "@/assets/logo.png";
 
 type ProfileField = { name: string; phone: string; address: string; allergies: string };
 
@@ -83,8 +84,12 @@ const ProfilePage = () => {
     return (
       <div className="pb-4">
         <header className="flex items-center justify-between px-4 py-3">
-          <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
-            <Zap className="w-5 h-5 text-primary-foreground" />
+          <div className="w-14 h-14 flex items-center justify-center overflow-hidden">
+            <img 
+              src={logo} 
+              alt="Mr Wu" 
+              className="w-full h-full object-contain" 
+            />
           </div>
           <h1 className="text-lg font-bold text-foreground">My Profile</h1>
           <div className="w-9" />
@@ -183,8 +188,12 @@ const ProfilePage = () => {
       )}
 
       <header className="flex items-center justify-between px-4 py-3">
-        <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
-          <Zap className="w-5 h-5 text-primary-foreground" />
+        <div className="w-14 h-14 flex items-center justify-center overflow-hidden">
+          <img 
+            src={logo} 
+            alt="Mr Wu" 
+            className="w-full h-full object-contain" 
+          />
         </div>
         <h1 className="text-lg font-bold text-foreground">My Profile</h1>
         <button onClick={openEdit} className="text-primary text-sm font-semibold">Edit</button>

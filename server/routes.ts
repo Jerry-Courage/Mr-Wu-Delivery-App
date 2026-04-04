@@ -589,7 +589,31 @@ router.post("/ai/support", aiLimiter, async (req: AuthRequest, res) => {
     if (!message || typeof message !== "string") {
       return res.status(400).json({ error: "message is required" });
     }
-    const reply = await getSupportResponse(message, history || []);
+
+    const items = await storage.getMenuItems();
+    const simplified = items.map(m => ({
+      id: m.id,
+      name: m.name,
+      category: m.category,
+      price: m.price,
+      description: m.description,
+      tags: m.tags ? JSON.parse(m.tags) : [],
+    }));
+
+    const user = await (async () => {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) return null;
+      const token = authHeader.split(" ")[1];
+      if (!token) return null;
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
+        return await storage.getUserById(decoded.id);
+      } catch {
+        return null;
+      }
+    })();
+
+    const reply = await getSupportResponse(message, history || [], simplified, user?.allergies);
     res.json({ reply });
   } catch (err) {
     console.error("### AI_SUPPORT_ROUTE_ERROR:", err);

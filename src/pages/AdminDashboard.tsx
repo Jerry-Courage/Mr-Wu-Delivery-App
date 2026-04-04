@@ -590,8 +590,8 @@ export default function AdminDashboard() {
       {/* Desktop Sidebar */}
       <aside className="fixed left-0 top-0 bottom-0 w-64 bg-neutral-900/60 backdrop-blur-xl border-r border-white/10 hidden lg:flex flex-col p-6 space-y-8 z-50">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(234,88,12,0.3)] border border-white/20 overflow-hidden p-1">
-            <img src={logo} alt="Mr. Wu" className="w-8 h-8 object-contain" />
+          <div className="w-14 h-14 flex items-center justify-center overflow-hidden">
+            <img src={logo} alt="Mr. Wu" className="w-full h-full object-contain" />
           </div>
           <span className="font-exrabold text-xl tracking-tighter text-white">WU-OS</span>
         </div>

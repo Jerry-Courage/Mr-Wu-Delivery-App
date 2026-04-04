@@ -4,6 +4,7 @@ import { ChevronLeft, ShoppingCart, Star, Zap, Leaf, AlertTriangle } from "lucid
 import { useQuery } from "@tanstack/react-query";
 import { useCart } from "@/context/CartContext";
 import { api } from "@/lib/api";
+import SplashScreen from "@/components/ui/SplashScreen";
 import type { MenuItem as CartMenuItem } from "@/data/menuData";
 import springRolls from "@/assets/spring-rolls.jpg";
 import sichuanNoodles from "@/assets/sichuan-noodles.jpg";
@@ -71,21 +72,7 @@ const ItemDetailPage = () => {
   });
 
   if (isLoading) {
-    return (
-      <div className="pb-24">
-        <div className="relative">
-          <div className="w-full h-56 md:h-80 bg-muted animate-pulse" />
-          <button onClick={() => navigate(-1)} className="absolute top-4 left-4 w-9 h-9 bg-card/80 backdrop-blur rounded-full flex items-center justify-center">
-            <ChevronLeft className="w-5 h-5 text-foreground" />
-          </button>
-        </div>
-        <div className="px-4 pt-4 space-y-3">
-          <div className="h-6 bg-muted animate-pulse rounded w-2/3" />
-          <div className="h-4 bg-muted animate-pulse rounded w-full" />
-          <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
-        </div>
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   const dbItem = dbItems.find(i => String(i.id) === id);

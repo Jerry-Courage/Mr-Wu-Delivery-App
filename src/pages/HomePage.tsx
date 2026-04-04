@@ -111,8 +111,8 @@ const HomePage = () => {
     <div className="pb-4">
       <header className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2 max-w-[65%]">
-          <div className="w-10 h-10 bg-white dark:bg-card rounded-full flex items-center justify-center flex-shrink-0 shadow-sm border border-border animate-in fade-in zoom-in duration-500 overflow-hidden">
-            <img src={logo} alt="Mr. Wu Logo" className="w-8 h-8 object-contain" />
+          <div className="w-14 h-14 flex items-center justify-center flex-shrink-0 animate-in fade-in zoom-in duration-500 overflow-hidden">
+            <img src={logo} alt="Mr. Wu Logo" className="w-full h-full object-contain" />
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Deliver to</span>

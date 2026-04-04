@@ -98,119 +98,107 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center px-4 overflow-hidden relative">
-      {/* Kinetic Background Blobs */}
-      <motion.div 
-        animate={{
-          scale: [1, 1.2, 1],
-          x: [0, 100, 0],
-          y: [0, 50, 0],
-        }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        className="absolute -top-20 -left-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none"
-      />
-      <motion.div 
-        animate={{
-          scale: [1, 1.3, 1],
-          x: [0, -100, 0],
-          y: [0, -80, 0],
-        }}
-        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-        className="absolute -bottom-20 -right-20 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[150px] pointer-events-none"
-      />
+    <div className="min-h-screen bg-[#0C0C0C] flex flex-col items-center justify-center px-6 safe-top safe-bottom relative">
+      {/* Subtle Premium Ambiance */}
+      <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
 
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm relative z-10"
+        className="w-full max-w-sm"
       >
-        {/* Logo Section */}
-        <div className="flex flex-col items-center mb-10">
+        {/* Header Section */}
+        <div className="flex flex-col items-center mb-12">
           <motion.div 
-            whileHover={{ scale: 1.05 }}
-            className="w-24 h-24 bg-white/5 backdrop-blur-2xl rounded-[2.5rem] flex items-center justify-center mb-6 shadow-2xl border border-white/10 overflow-hidden p-3"
+            whileHover={{ scale: 1.02 }}
+            className="w-32 h-32 flex items-center justify-center mb-6"
           >
-            <img src={logo} alt="Mr. Wu Logo" className="w-full h-full object-contain brightness-110" />
+            <img 
+              src={logo} 
+              alt="Mr. Wu Logo" 
+              className="w-full h-full object-contain" 
+            />
           </motion.div>
-          <h1 className="text-4xl font-black text-white tracking-tighter mb-1">MR WU'S</h1>
-          <p className="text-emerald-500 text-[10px] font-black uppercase tracking-[0.3em]">Imperial Chinese Cuisine</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Welcome back</h1>
+          <p className="text-muted-foreground text-sm mt-2">Log in to your Mr. Wu account</p>
         </div>
 
-        {/* Auth Container */}
-        <div className="bg-white/5 backdrop-blur-3xl rounded-[2rem] border border-white/10 p-1 shadow-2xl overflow-hidden">
-          {/* Tabs */}
-          <div className="flex p-1.5 gap-1">
-            {(["login", "register"] as Tab[]).map(t => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`flex-1 py-3 rounded-[1.2rem] text-xs font-black uppercase tracking-widest transition-all ${
-                  tab === t 
-                    ? "bg-white text-black shadow-xl" 
-                    : "text-white/40 hover:text-white/60"
-                }`}
-              >
-                {t === "login" ? "Sign In" : "Sign Up"}
-              </button>
-            ))}
-          </div>
+        {/* Auth Tab Selector */}
+        <div className="flex bg-[#161616] p-1 rounded-2xl mb-8 border border-white/5">
+          {(["login", "register"] as Tab[]).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`flex-1 py-3 rounded-xl text-xs font-semibold transition-all duration-300 ${
+                tab === t 
+                  ? "bg-primary text-white shadow-lg" 
+                  : "text-muted-foreground hover:text-white"
+              }`}
+            >
+              {t === "login" ? "Login" : "Sign up"}
+            </button>
+          ))}
+        </div>
 
-          <div className="p-6">
-            <AnimatePresence mode="wait">
-              {tab === "login" ? (
-                <motion.form 
-                  key="login-form"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  onSubmit={handleLogin} 
-                  className="space-y-4"
-                >
+        <div className="space-y-6">
+          <AnimatePresence mode="wait">
+            {tab === "login" ? (
+              <motion.form 
+                key="login-form"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onSubmit={handleLogin} 
+                className="space-y-5"
+              >
+                <div className="space-y-4">
                   <AuthInput 
-                    id="login-email"
-                    label="Email Address"
+                    id="email"
+                    label="Email"
                     type="email"
-                    placeholder="name@empire.com"
+                    placeholder="Enter your email"
                     value={loginData.email}
                     onChange={v => setLoginData(p => ({ ...p, email: v }))}
                   />
 
                   <AuthInput 
-                    id="login-password"
+                    id="password"
                     label="Password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
+                    placeholder="Enter your password"
                     value={loginData.password}
                     onChange={v => setLoginData(p => ({ ...p, password: v }))}
                     suffix={
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-white/20 hover:text-white/50 transition-colors">
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-muted-foreground hover:text-primary transition-colors">
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     }
                   />
+                </div>
 
-                  <motion.button
-                    whileTap={{ scale: 0.98 }}
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-primary text-black font-black uppercase tracking-widest py-4 rounded-2xl shadow-[0_0_20px_rgba(var(--primary),0.3)] disabled:opacity-50 transition-all hover:brightness-110"
-                  >
-                    {loading ? "Logging in..." : "Login"}
-                  </motion.button>
-                </motion.form>
-              ) : (
-                <motion.form 
-                  key="register-form"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  onSubmit={handleRegister} 
-                  className="space-y-4"
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-primary text-white font-bold py-4 rounded-2xl shadow-xl shadow-primary/20 disabled:opacity-50 transition-all hover:brightness-110 active:scale-[0.99]"
                 >
+                  {loading ? "Logging in..." : "Login"}
+                </motion.button>
+              </motion.form>
+            ) : (
+              <motion.form 
+                key="register-form"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onSubmit={handleRegister} 
+                className="space-y-5"
+              >
+                <div className="space-y-4">
                   <AuthInput 
                     id="reg-name"
                     label="Full Name"
-                    placeholder="Your Name"
+                    placeholder="Your legal name"
                     value={registerData.name}
                     onChange={v => setRegisterData(p => ({ ...p, name: v }))}
                   />
@@ -218,7 +206,7 @@ const LoginPage = () => {
                     id="reg-email"
                     label="Email"
                     type="email"
-                    placeholder="you@empire.com"
+                    placeholder="your@email.com"
                     value={registerData.email}
                     onChange={v => setRegisterData(p => ({ ...p, email: v }))}
                   />
@@ -226,96 +214,85 @@ const LoginPage = () => {
                     id="reg-password"
                     label="Password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Min 6 characters"
+                    placeholder="Minimum 6 characters"
                     value={registerData.password}
                     onChange={v => setRegisterData(p => ({ ...p, password: v }))}
                     suffix={
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-white/20 hover:text-white/50 transition-colors">
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-muted-foreground hover:text-primary transition-colors">
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     }
                   />
 
                   {(registerData.role === "kitchen" || registerData.role === "admin" || isStaffMode) && (
-                    <motion.div 
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      className="pt-4 border-t border-white/10 space-y-4"
-                    >
-                      <p className="text-[10px] font-black text-primary uppercase tracking-widest text-center">Staff Authentication</p>
+                    <div className="pt-4 space-y-4 border-t border-white/5">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1">Rank</label>
+                        <label className="text-xs font-medium text-muted-foreground ml-1">Staff Role</label>
                         <select
                           value={registerData.role}
                           onChange={e => setRegisterData(p => ({ ...p, role: e.target.value as any }))}
-                          className="w-full px-5 py-4 bg-white/5 rounded-2xl text-white font-bold border border-white/5 focus:outline-none focus:border-primary/30 transition-all appearance-none"
+                          className="w-full px-5 py-4 bg-[#161616] rounded-2xl text-white font-medium border border-white/5 focus:outline-none focus:border-primary/50 transition-all appearance-none"
                         >
                           <option value="customer" className="bg-[#111]">Customer</option>
                           <option value="rider" className="bg-[#111]">Delivery Rider</option>
                           <option value="kitchen" className="bg-[#111]">Kitchen Staff</option>
-                          <option value="admin" className="bg-[#111]">Super Admin</option>
+                          <option value="admin" className="bg-[#111]">Admin</option>
                         </select>
                       </div>
                       <AuthInput 
                         id="reg-secret"
                         label="Security Clearance"
                         type="password"
-                        placeholder="Secret Key"
+                        placeholder="Admin Secret Key"
                         value={registerData.adminSecret}
                         onChange={v => setRegisterData(p => ({ ...p, adminSecret: v }))}
                       />
-                    </motion.div>
+                    </div>
                   )}
+                </div>
 
-                  <motion.button
-                    whileTap={{ scale: 0.98 }}
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-emerald-500 text-black font-black uppercase tracking-widest py-4 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50 transition-all hover:brightness-110"
-                  >
-                    {loading ? "Processing..." : "Sign Up"}
-                  </motion.button>
-                </motion.form>
-              )}
-            </AnimatePresence>
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-primary text-white font-bold py-4 rounded-2xl shadow-xl shadow-primary/20 disabled:opacity-50 transition-all hover:brightness-110"
+                >
+                  {loading ? "Creating account..." : "Sign up"}
+                </motion.button>
+              </motion.form>
+            )}
+          </AnimatePresence>
 
-            {/* Google Divider */}
-            <div className="relative my-8 flex items-center justify-center">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-white/10" />
-              </div>
-              <span className="relative bg-transparent px-4 text-[10px] font-black text-white/20 uppercase tracking-[0.2em] backdrop-blur-3xl">Or continue with</span>
+          <div className="relative flex items-center justify-center py-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-white/5" />
             </div>
+            <span className="relative bg-[#0C0C0C] px-4 text-xs text-muted-foreground">Or continue with</span>
+          </div>
 
-            {/* Google Button */}
-            <div className="flex justify-center">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => toast({ title: "Error", description: "Google login failed", variant: "destructive" })}
-                useOneTap
-                theme="filled_black"
-                shape="pill"
-                width="100%"
-              />
-            </div>
+          <div className="flex justify-center -mx-2">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => toast({ title: "Error", description: "Google login failed", variant: "destructive" })}
+              useOneTap
+              theme="filled_black"
+              shape="pill"
+              width="100%"
+            />
           </div>
         </div>
 
-        {/* Footer CTAs */}
-        <div className="mt-10 flex flex-col items-center gap-6">
-          <div className="text-center group">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-2 group-hover:text-emerald-500/50 transition-colors">Want to join our elite fleet?</p>
-            <motion.button 
-              whileHover={{ x: 5 }}
-              onClick={() => navigate("/rider-onboarding")}
-              className="inline-flex items-center gap-3 text-sm font-black text-emerald-500 uppercase tracking-widest hover:text-emerald-400 transition-colors"
-            >
-              Deliver with Mr Wu <ArrowRight size={18} />
-            </motion.button>
-          </div>
-
-          <p className="text-center text-[9px] font-bold uppercase tracking-[0.3em] text-white/20 px-8 leading-loose">
-            By entering the empire you agree to our <span className="text-white/40 underline cursor-pointer">Terms</span> & <span className="text-white/40 underline cursor-pointer">Privacy Protocol</span>
+        {/* Footer */}
+        <div className="mt-12 flex flex-col items-center gap-8">
+          <button 
+            onClick={() => navigate("/rider-onboarding")}
+            className="group flex items-center gap-3 text-sm font-semibold text-white/50 hover:text-white transition-all duration-300"
+          >
+            Looking for delivery work? <span className="text-primary group-hover:translate-x-1 transition-transform">Get started</span>
+          </button>
+          
+          <p className="text-center text-[10px] text-muted-foreground tracking-wide leading-loose max-w-[280px]">
+            By continuing, you agree to Mr. Wu's <span className="text-white border-b border-white/20 cursor-pointer">Terms of Service</span> and <span className="text-white border-b border-white/20 cursor-pointer">Privacy Policy</span>.
           </p>
         </div>
       </motion.div>
@@ -333,8 +310,8 @@ const AuthInput = ({ id, label, type = "text", placeholder, value, onChange, suf
   suffix?: React.ReactNode;
 }) => (
   <div className="space-y-1.5">
-    <label htmlFor={id} className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1">{label}</label>
-    <div className="relative group">
+    <label htmlFor={id} className="text-xs font-medium text-muted-foreground ml-1.5">{label}</label>
+    <div className="relative">
       <input
         id={id}
         type={type}
@@ -342,7 +319,7 @@ const AuthInput = ({ id, label, type = "text", placeholder, value, onChange, suf
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-5 py-4 bg-white/5 rounded-2xl text-white font-bold placeholder:text-white/10 border border-white/5 focus:outline-none focus:border-primary/30 transition-all focus:bg-white/[0.08]"
+        className="w-full px-5 py-4 bg-[#161616] rounded-2xl text-white font-medium placeholder:text-muted-foreground/30 border border-white/5 focus:outline-none focus:border-primary/50 focus:bg-[#1A1A1A] transition-all duration-300 text-sm"
       />
       {suffix && (
         <div className="absolute right-4 top-1/2 -translate-y-1/2">

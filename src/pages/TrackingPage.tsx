@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Share2, MapPin, Clock, Bike, Send, X, ChevronLeft, CheckCircle2, ChefHat, Package, Loader2 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
+import SplashScreen from "@/components/ui/SplashScreen";
 import { api } from "@/lib/api";
 import { useSocket } from "@/context/SocketContext";
 import { useAuth } from "@/context/AuthContext";
@@ -265,11 +266,7 @@ const TrackingPage = () => {
   }, [chatInput, socket, id, user]);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <Loader2 className="text-orange-500 animate-spin" size={36} />
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   if (!order) {

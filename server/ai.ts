@@ -260,16 +260,26 @@ Give a professional 2-3 sentence strategic insight.`;
 
 export async function getSupportResponse(
   userQuery: string,
-  history: Message[] = []
+  history: Message[] = [],
+  menuItems: { id: number; name: string; category: string; price: string; description: string; tags: string[] | null }[] = [],
+  allergies?: string | null
 ): Promise<string> {
+  const menuText = menuItems.length > 0 
+    ? menuItems.map(i => `ID:${i.id} "${i.name}" ($${i.price}) - ${i.category}. ${i.description}${i.tags?.length ? " [" + i.tags.join(", ") + "]" : ""}`).join("\n")
+    : "Currently updating our kitchen inventory.";
+
   const systemPrompt = `You are Mr Wu's AI Support Assistant. 
 STRICT RULES:
-1. Be extremely concise. Max 2 sentences per response.
-2. Never hallucinate. If you don't know something about an order, ask the user to check their 'Orders' screen.
-3. Use a helpful, professional, yet brief tone.
-4. Topics: menu (premium Chinese), delivery (30-45 min), refunds (via Orders screen).
-5. No small talk. Answer the query and stop.
-6. Unknown/complex issues → contact support@mrwu.com immediately.`;
+1. Be extremely concise. Max 3 sentences per response. 
+2. Use a sophisticated, helpful, yet brief tone ("Masterpiece" branding).
+3. MENU KNOWLEDGE:
+${menuText}
+4. RECOMMENDATIONS: If the user asks for food, combinations, or "what to eat", suggest a FULL MEAL (e.g., Starter + Main + Drink/Side). 
+5. FORMATTING: You MUST use the exact tag [PRODUCT:id] to link to any dish you recommend. 
+   Example: "I highly recommend our Sichuan Noodles [PRODUCT:12] paired with Spring Rolls [PRODUCT:5]."
+6. ALLERGIES: Avoid suggesting any items containing these: "${allergies || "None recognized"}".
+7. Topics: menu, delivery (30-45 min), refunds (via Orders screen). 
+8. No small talk. Unknown issues → contact support@mrwu.com.`;
 
   const messages: Message[] = [
     { role: "system", content: systemPrompt },

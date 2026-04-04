@@ -1,8 +1,65 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, Send, X, User, Sparkles, Loader2 } from "lucide-react";
+import { MessageSquare, Send, X, User, Sparkles, Loader2, Plus, ShoppingCart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
+import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+
+interface DBMenuItem {
+  id: number;
+  name: string;
+  description: string;
+  price: string;
+  imageUrl: string | null;
+  category: string;
+  tags: string | null;
+}
+
+const ChatProductCard = ({ item, onAdd }: { item: DBMenuItem; onAdd: (item: any) => void }) => {
+  const navigate = useNavigate();
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="mt-3 bg-card border border-primary/20 rounded-2xl overflow-hidden shadow-sm group hover:border-primary/40 transition-all"
+    >
+      <div className="flex gap-3 p-2">
+        <div 
+          onClick={() => navigate(`/item/${item.id}`)}
+          className="w-20 h-20 bg-muted rounded-xl flex-shrink-0 overflow-hidden cursor-pointer"
+        >
+          {item.imageUrl ? (
+            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-xl">🍜</div>
+          )}
+        </div>
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
+          <h4 className="text-xs font-bold text-foreground truncate">{item.name}</h4>
+          <p className="text-[10px] text-muted-foreground line-clamp-1 mb-1">{item.description}</p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black text-primary">GH₵{parseFloat(item.price).toFixed(2)}</span>
+            <button 
+              onClick={() => onAdd({ 
+                id: String(item.id), 
+                name: item.name, 
+                price: parseFloat(item.price), 
+                image: item.imageUrl || "" 
+              })}
+              className="px-2 py-1 bg-primary text-primary-foreground rounded-lg flex items-center gap-1 hover:scale-105 active:scale-95 transition-all"
+            >
+              <Plus className="w-3 h-3" />
+              <span className="text-[10px] font-bold">Add</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 interface Message {
   role: "system" | "user" | "assistant";
@@ -16,10 +73,37 @@ interface SupportChatProps {
 
 const SupportChat = ({ isOpen, onClose }: SupportChatProps) => {
   const { user } = useAuth();
+  const { addItem } = useCart();
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const { data: menuItems = [] } = useQuery<DBMenuItem[]>({
+    queryKey: ["/api/menu"],
+    queryFn: () => api.get("/menu"),
+    staleTime: 60000,
+  });
+
+  const renderContent = (content: string) => {
+    const parts = content.split(/(\[PRODUCT:\d+\])/g);
+    return parts.map((part, index) => {
+      const match = part.match(/\[PRODUCT:(\d+)\]/);
+      if (match) {
+        const id = parseInt(match[1]);
+        const item = menuItems.find(i => i.id === id);
+        if (item) {
+          return <ChatProductCard key={index} item={item} onAdd={(item) => {
+            addItem(item);
+            toast({ title: `${item.name} added to cart` });
+          }} />;
+        }
+        return null;
+      }
+      return <span key={index}>{part}</span>;
+    });
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -118,7 +202,7 @@ const SupportChat = ({ isOpen, onClose }: SupportChatProps) => {
                       {msg.role === "user" ? <User className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
                     </div>
                     <div className={`p-3 rounded-2xl text-sm leading-relaxed ${msg.role === "user" ? "bg-primary text-primary-foreground rounded-tr-none shadow-md" : "bg-card text-foreground rounded-tl-none border border-border"}`}>
-                      {msg.content}
+                      {msg.role === "user" ? msg.content : renderContent(msg.content)}
                     </div>
                   </div>
                 </div>
