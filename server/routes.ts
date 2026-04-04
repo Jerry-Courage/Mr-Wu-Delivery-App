@@ -488,11 +488,15 @@ router.post("/ai/search", aiLimiter, async (req: AuthRequest, res) => {
     } catch {
       // Fallback: simple text search when AI is unavailable
       const q = query.trim().toLowerCase();
-      const matchedItems = items.filter(i =>
-        i.name.toLowerCase().includes(q) ||
-        (i.description && i.description.toLowerCase().includes(q)) ||
-        (i.category && i.category.toLowerCase().includes(q))
-      );
+      const matchedItems = items.filter(i => {
+        const tagsStr = i.tags ? i.tags.toLowerCase() : "";
+        return (
+          i.name.toLowerCase().includes(q) ||
+          (i.description && i.description.toLowerCase().includes(q)) ||
+          (i.category && i.category.toLowerCase().includes(q)) ||
+          tagsStr.includes(q)
+        );
+      });
       res.json({
         message: matchedItems.length > 0
           ? `Found ${matchedItems.length} item(s) matching "${query}".`
@@ -590,18 +594,6 @@ router.delete("/admin/staff/:id", auth, requireRole("admin"), async (req, res) =
 });
 
 // ─── Help & Support ──────────────────────────────────────────────────────────
-
-router.post("/ai/support", aiLimiter, async (req, res) => {
-  try {
-    const { message, history } = req.body;
-    if (!message) return res.status(400).json({ error: "message is required" });
-    const response = await getSupportResponse(message, history || []);
-    res.json({ response });
-  } catch (err: any) {
-    console.error("AI support error DETAIL:", err.message, err.stack);
-    res.status(500).json({ error: "AI Assistant is busy: " + err.message });
-  }
-});
 
 router.post("/support/email", auth, async (req: AuthRequest, res) => {
   const { subject, message } = req.body;

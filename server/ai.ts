@@ -1,10 +1,11 @@
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODELS = [
+  "google/gemma-3-4b-it:free",
+  "openai/gpt-oss-20b:free",
   "meta-llama/llama-3.2-3b-instruct:free",
-  "meta-llama/llama-3.1-8b-instruct:free",
-  "google/gemma-2-9b-it:free",
-  "mistralai/mistral-nemo:free",
+  "qwen/qwen3-coder:free",
+  "arcee-ai/trinity-mini:free",
 ];
 
 async function chat(messages: Message[]): Promise<string> {
