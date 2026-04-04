@@ -85,8 +85,10 @@ export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, cre
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true });
 
 export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Order = typeof orders.$inferSelect;
-export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type MenuItem = typeof menuItems.$inferSelect;
+
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
+export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;

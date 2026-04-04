@@ -29,7 +29,7 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy only the bundled output and necessary files
+# Copy the bundled server and frontend assets
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/dist-server ./dist-server
 COPY --from=builder /app/package.json ./package.json
@@ -37,7 +37,7 @@ COPY --from=builder /app/package.json ./package.json
 # Install only production dependencies (better-sqlite3 must be installed here)
 RUN npm install --omit=dev --no-audit --no-fund
 
-# Initial database
+# Initial database and public assets
 COPY --from=builder /app/sqlite_v2.db ./sqlite_v2.db
 COPY --from=builder /app/public/assets ./public/assets
 
@@ -50,5 +50,5 @@ ENV PORT=3001
 
 EXPOSE 3001
 
-# Start the server using node directly (much faster than tsx)
-CMD ["node", "dist-server/index.js"]
+# Start the server using node directly from the High-Performance CJS bundle
+CMD ["node", "dist-server/index.cjs"]
