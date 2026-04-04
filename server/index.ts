@@ -84,6 +84,17 @@ app.use("/api", routes);
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
+// Serve frontend in production
+if (process.env.NODE_ENV === "production" || process.env.RENDER) {
+  const distPath = path.resolve(process.cwd(), "dist");
+  app.use(express.static(distPath));
+  app.get("*", (req, res) => {
+    if (!req.path.startsWith("/api")) {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    }
+  });
+}
+
 // Global Error Handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error("### GLOBAL ERROR ###", err);
