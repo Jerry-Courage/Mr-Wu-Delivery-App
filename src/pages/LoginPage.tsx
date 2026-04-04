@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import logo from "@/assets/logo.png";
 import { Eye, EyeOff, ChefHat } from "lucide-react";
 
 type Tab = "login" | "register";
@@ -85,8 +86,8 @@ const LoginPage = () => {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-3">
-            <ChefHat className="w-8 h-8 text-primary-foreground" />
+          <div className="w-20 h-20 bg-white dark:bg-card rounded-3xl flex items-center justify-center mb-4 shadow-md border border-border overflow-hidden p-2">
+            <img src={logo} alt="Mr. Wu Logo" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Mr Wu's</h1>
           <p className="text-muted-foreground text-sm">Chinese Delivery</p>

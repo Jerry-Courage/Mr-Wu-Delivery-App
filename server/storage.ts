@@ -63,6 +63,8 @@ export interface IStorage {
   updatePaymentStatus(id: number, status: string, transactionId?: string): Promise<Order>;
   updateMenuItemImage(id: number, imageUrl: string): Promise<MenuItem>;
   assignRider(orderId: number, riderId: number): Promise<Order>;
+  updateRiderLocation(orderId: number, lat: number, lng: number): Promise<Order>;
+  updateCustomerLocation(orderId: number, lat: number, lng: number): Promise<Order>;
 
   updateUserProfile(id: number, data: { name?: string; phone?: string; address?: string }): Promise<User | null>;
 
@@ -73,7 +75,11 @@ export interface IStorage {
     popularItems: { name: string; count: number }[];
     totalRevenue: number;
     totalOrders: number;
+    activeUsers: number;
+    peakHours: { hour: string; count: number }[];
+    userSegments: { name: string; value: number }[];
   }>;
+  getAdminUsers(): Promise<(User & { totalSpend: number; orderCount: number })[]>;
 }
 
 export class Storage implements IStorage {
@@ -106,7 +112,7 @@ export class Storage implements IStorage {
   }
 
   async getUsersByRole(role: string): Promise<User[]> {
-    return db.select().from(users).where(eq(users.role, role));
+    return db.select().from(users).where(eq(users.role, role as any));
   }
 
   async deleteUser(id: number): Promise<void> {
@@ -294,6 +300,22 @@ export class Storage implements IStorage {
     return order;
   }
 
+  async updateRiderLocation(orderId: number, lat: number, lng: number): Promise<Order> {
+    const [order] = await db.update(orders)
+      .set({ riderLat: lat, riderLng: lng, updatedAt: new Date() })
+      .where(eq(orders.id, orderId))
+      .returning();
+    return order;
+  }
+
+  async updateCustomerLocation(orderId: number, lat: number, lng: number): Promise<Order> {
+    const [order] = await db.update(orders)
+      .set({ customerLat: lat, customerLng: lng, updatedAt: new Date() })
+      .where(eq(orders.id, orderId))
+      .returning();
+    return order;
+  }
+
   async getAdminStats(days: number): Promise<{
     revenue: { date: string; amount: number }[];
     orders: { date: string; count: number }[];
@@ -301,6 +323,8 @@ export class Storage implements IStorage {
     totalRevenue: number;
     totalOrders: number;
     activeUsers: number;
+    peakHours: { hour: string; count: number }[];
+    userSegments: { name: string; value: number }[];
   }> {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
@@ -354,7 +378,67 @@ export class Storage implements IStorage {
       totalRevenue,
       totalOrders: recentOrders.length,
       activeUsers: allCustomers.length,
+      peakHours: this.calculatePeakHours(allOrders),
+      userSegments: this.calculateUserSegments(allOrders, allCustomers),
     };
+  }
+
+  private calculatePeakHours(allOrders: Order[]): { hour: string; count: number }[] {
+    const hours: Record<number, number> = {};
+    for (let i = 0; i < 24; i++) hours[i] = 0;
+
+    allOrders.forEach(o => {
+      const ts = (o.createdAt && !isNaN(o.createdAt.getTime())) ? o.createdAt : new Date();
+      const hour = ts.getHours();
+      hours[hour] = (hours[hour] || 0) + 1;
+    });
+
+    return Object.entries(hours).map(([hour, count]) => ({
+      hour: `${hour.padStart(2, '0')}:00`,
+      count
+    }));
+  }
+
+  private calculateUserSegments(allOrders: Order[], allCustomers: User[]): { name: string; value: number }[] {
+    const segments = {
+      "New Customers": 0,
+      "Returning Customers": 0,
+      "VIP Customers": 0
+    };
+
+    const userStats: Record<number, number> = {};
+    allOrders.forEach(o => {
+      userStats[o.userId] = (userStats[o.userId] || 0) + 1;
+    });
+
+    allCustomers.forEach(u => {
+      const count = userStats[u.id] || 0;
+      if (count === 0) return;
+      if (count === 1) segments["New Customers"]++;
+      else if (count < 5) segments["Returning Customers"]++;
+      else segments["VIP Customers"]++;
+    });
+
+    return Object.entries(segments).map(([name, value]) => ({ name, value }));
+  }
+
+  async getAdminUsers(): Promise<(User & { totalSpend: number; orderCount: number })[]> {
+    const fetchedUsers = await db.select().from(users);
+    const filteredUsers = fetchedUsers.filter(u => u.role === "customer" || u.role === "rider");
+
+    const result = await Promise.all(
+      filteredUsers.map(async user => {
+        const userOrders = await db.select().from(orders).where(eq(orders.userId, user.id));
+        const totalSpend = userOrders.reduce((sum, o) => sum + parseFloat(o.total), 0);
+        return {
+          ...user,
+          totalSpend,
+          orderCount: userOrders.length,
+        };
+      })
+    );
+
+    return result.sort((a, b) => b.totalSpend - a.totalSpend);
   }
 }
 

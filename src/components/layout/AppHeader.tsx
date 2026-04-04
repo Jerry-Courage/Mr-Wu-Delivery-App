@@ -1,6 +1,7 @@
 import { ChevronLeft, Search, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ThemeToggle from "@/components/ThemeToggle";
+import logo from "@/assets/logo.png";
 
 interface AppHeaderProps {
   title: string;
@@ -13,11 +14,15 @@ const AppHeader = ({ title, showBack = false, rightIcon }: AppHeaderProps) => {
 
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-card border-b border-border">
-      <div className="w-10">
-        {showBack && (
+      <div className="flex items-center min-w-10">
+        {showBack ? (
           <button onClick={() => navigate(-1)} className="p-1 -ml-1">
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
+        ) : (
+          <div className="w-8 h-8 flex items-center justify-center bg-white dark:bg-muted rounded-full shadow-sm overflow-hidden border border-border">
+            <img src={logo} alt="Wu" className="w-6 h-6 object-contain" />
+          </div>
         )}
       </div>
       <h1 className="text-lg font-bold text-foreground">{title}</h1>

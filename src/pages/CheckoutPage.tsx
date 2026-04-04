@@ -108,21 +108,25 @@ const CheckoutPage = () => {
         onClose: () => {
           toast({ title: "Payment cancelled", description: "Your order was created but not paid. Try again.", variant: "destructive" });
         },
-        callback: async (response) => {
-          setIsProcessing(true);
-          try {
-            await api.post("/payments/verify", {
-              reference: response.reference,
-              orderId: order.id,
-            });
-            clearCart();
-            toast({ title: "Payment Successful!", description: "Your order is confirmed." });
-            navigate(`/tracking/${order.id}`);
-          } catch {
-            toast({ title: "Payment verification failed", description: "Contact support with ref: " + response.reference, variant: "destructive" });
-          } finally {
-            setIsProcessing(false);
-          }
+        callback: (response: { reference: string }) => {
+          // Move async logic inside to satisfy Paystack's function check
+          const verify = async () => {
+            setIsProcessing(true);
+            try {
+              await api.post("/payments/verify", {
+                reference: response.reference,
+                orderId: order.id,
+              });
+              clearCart();
+              toast({ title: "Payment Successful!", description: "Your order is confirmed." });
+              navigate(`/tracking/${order.id}`);
+            } catch {
+              toast({ title: "Payment verification failed", description: "Contact support with ref: " + response.reference, variant: "destructive" });
+            } finally {
+              setIsProcessing(false);
+            }
+          };
+          verify();
         },
       });
 

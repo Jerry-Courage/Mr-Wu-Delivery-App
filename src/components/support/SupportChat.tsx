@@ -1,0 +1,169 @@
+import { useState, useRef, useEffect } from "react";
+import { MessageSquare, Send, X, User, Sparkles, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { api } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+
+interface Message {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+interface SupportChatProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const SupportChat = ({ isOpen, onClose }: SupportChatProps) => {
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      setMessages([
+        { 
+          role: "assistant", 
+          content: `Hi ${user?.name || "there"}! 👋 I'm Mr Wu's AI assistant. How can I help you today?` 
+        }
+      ]);
+    }
+  }, [isOpen, user, messages.length]);
+
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMsg: Message = { role: "user", content: input };
+    setMessages(prev => [...prev, userMsg]);
+    setInput("");
+    setIsLoading(true);
+
+    try {
+      const history = messages.slice(-5); // Send last 5 for context
+      const res = await api.post<{ response: string }>("/ai/support", { 
+        message: input,
+        history 
+      });
+      
+      setMessages(prev => [...prev, { role: "assistant", content: res.response }]);
+    } catch (err) {
+      setMessages(prev => [...prev, { 
+        role: "assistant", 
+        content: "I'm sorry, I encountered an error. Please try again or contact support@mrwu.com." 
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
+          />
+          
+          {/* Chat Window */}
+          <motion.div
+            initial={{ opacity: 0, y: 100, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 100, scale: 0.95 }}
+            className="fixed bottom-4 right-4 left-4 md:left-auto md:right-8 md:bottom-8 md:w-96 h-[500px] max-h-[80vh] bg-card border border-border rounded-3xl shadow-2xl z-[101] flex flex-col overflow-hidden"
+          >
+            {/* Header */}
+            <div className="bg-primary p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary-foreground/20 rounded-full flex items-center justify-center border border-primary-foreground/30">
+                  <Sparkles className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-primary-foreground">Mr Wu Assistant</h3>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                    <span className="text-[10px] text-primary-foreground/70 uppercase font-bold tracking-widest">Always Active</span>
+                  </div>
+                </div>
+              </div>
+              <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                <X className="w-5 h-5 text-primary-foreground" />
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div 
+              ref={scrollRef}
+              className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth bg-gradient-to-b from-transparent to-muted/30"
+            >
+              {messages.map((msg, i) => (
+                <div 
+                  key={i} 
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div className={`flex gap-2 max-w-[85%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground border border-border"}`}>
+                      {msg.role === "user" ? <User className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                    </div>
+                    <div className={`p-3 rounded-2xl text-sm leading-relaxed ${msg.role === "user" ? "bg-primary text-primary-foreground rounded-tr-none shadow-md" : "bg-card text-foreground rounded-tl-none border border-border"}`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="flex gap-2 items-center">
+                    <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center border border-border animate-pulse">
+                      <Sparkles className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div className="bg-card border border-border p-3 rounded-2xl rounded-tl-none flex items-center gap-2">
+                       <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                       <span className="text-xs text-muted-foreground italic">Thinking...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input */}
+            <div className="p-4 bg-card border-t border-border">
+              <div className="relative flex items-center gap-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                  placeholder="Type your question..."
+                  className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm pr-12 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={isLoading || !input.trim()}
+                  className="absolute right-1 w-10 h-10 bg-primary text-primary-foreground rounded-lg flex items-center justify-center disabled:opacity-50 transition-all hover:scale-105 active:scale-95 shadow-lg"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-[10px] text-center text-muted-foreground mt-2 uppercase font-bold tracking-widest opacity-50">Powered by Wu AI Intelligence</p>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
+export default SupportChat;

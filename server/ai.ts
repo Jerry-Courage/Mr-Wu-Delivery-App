@@ -1,38 +1,61 @@
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL = "openrouter/auto";
-
-interface Message {
-  role: "system" | "user" | "assistant";
-  content: string;
-}
+const MODELS = [
+  "openrouter/free",
+  "mistralai/mistral-7b-instruct:free",
+  "google/gemini-2.0-flash-lite-preview-02-05:free"
+];
 
 async function chat(messages: Message[]): Promise<string> {
-  if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY not set");
-
-  const res = await fetch(BASE_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "https://mrwus.delivery",
-      "X-Title": "Mr Wu's Delivery",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages,
-      max_tokens: 512,
-      temperature: 0.7,
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`OpenRouter error: ${err}`);
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("OPENROUTER_API_KEY not set");
   }
 
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? "";
+  // Basic token/length management: ensure messages aren't excessively long
+  const sanitizedMessages = messages.map(msg => ({
+    ...msg,
+    content: msg.content.length > 5000 ? msg.content.substring(0, 5000) + "..." : msg.content
+  }));
+
+  let lastError: any = null;
+  
+  for (const modelId of MODELS) {
+    try {
+      console.log(`### AI Request (${modelId}):`, JSON.stringify({ model: modelId, messageCount: sanitizedMessages.length }));
+      const res = await fetch(BASE_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "http://localhost:5000",
+          "X-Title": "Mr Wu's Food Delivery Audit",
+        },
+        body: JSON.stringify({
+          model: modelId,
+          messages: sanitizedMessages,
+          max_tokens: 512,
+          temperature: 0.7,
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error(`### OpenRouter ERROR (${modelId}): STATUS ${res.status}`, errText);
+        throw new Error(`OpenRouter error (${modelId}): ${errText}`);
+      }
+
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (content) return content;
+      
+    } catch (err: any) {
+      console.warn(`AI model ${modelId} failed:`, err.message);
+      lastError = err;
+      continue; // Try next model
+    }
+  }
+
+  throw lastError || new Error("All AI models failed");
 }
 
 export interface RecommendationItem {
@@ -217,4 +240,26 @@ export async function getAdminInsights(
   ]);
 
   return response.trim() || "Performance is steady. Focus on maintaining quality and speed.";
+}
+
+export async function getSupportResponse(
+  userQuery: string,
+  history: Message[] = []
+): Promise<string> {
+  const systemPrompt = `You are Mr Wu's AI Support Assistant. You are friendly, helpful, and professional. 
+  You can help with:
+  - Menu questions (we serve premium Chinese cuisine like General Tso's, Peking Duck, Dim Sum)
+  - Delivery status (orders typically take 30-45 minutes)
+  - Refund policy (refunds can be requested via the 'Orders' screen)
+  - Technical issues with the app
+  
+  Keep your responses concise and naturally conversational. If you don't know something, ask the user to contact our human support via email at support@mrwu.com.`;
+
+  const messages: Message[] = [
+    { role: "system", content: systemPrompt },
+    ...history,
+    { role: "user", content: userQuery }
+  ];
+
+  return chat(messages);
 }

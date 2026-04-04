@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import { Search, Bell, ChevronRight, Plus, Zap, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -5,8 +6,10 @@ import { api } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import promoCombo from "@/assets/promo-combo.jpg";
+import logo from "@/assets/logo.png";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
+import { useGeolocation } from "@/hooks/useGeolocation";
 
 const categories = [
   { icon: "🍲", label: "Combos" },
@@ -50,6 +53,12 @@ const HomePage = () => {
   const { user } = useAuth();
   const { addItem } = useCart();
   const { toast } = useToast();
+  const location = useGeolocation();
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [tempAddress, setTempAddress] = useState("");
+  const [manualAddress, setManualAddress] = useState<string | null>(null);
+
+  const displayAddress = manualAddress || location.address || "Main St, 123";
 
   const { data: dbItems = [] } = useQuery<DBMenuItem[]>({
     queryKey: ["/api/menu"],
@@ -97,16 +106,48 @@ const HomePage = () => {
   return (
     <div className="pb-4">
       <header className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
-            <Zap className="w-5 h-5 text-primary-foreground" />
+        <div className="flex items-center gap-2 max-w-[65%]">
+          <div className="w-10 h-10 bg-white dark:bg-card rounded-full flex items-center justify-center flex-shrink-0 shadow-sm border border-border animate-in fade-in zoom-in duration-500 overflow-hidden">
+            <img src={logo} alt="Mr. Wu Logo" className="w-8 h-8 object-contain" />
           </div>
-          <span className="font-semibold text-foreground">Main St, 123</span>
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Deliver to</span>
+            {isEditingAddress ? (
+              <div className="flex items-center gap-1 mt-0.5">
+                <input
+                  autoFocus
+                  type="text"
+                  value={tempAddress}
+                  onChange={(e) => setTempAddress(e.target.value)}
+                  onBlur={() => setIsEditingAddress(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      setManualAddress(tempAddress);
+                      setIsEditingAddress(false);
+                      toast({ title: "Address updated manually" });
+                    }
+                  }}
+                  className="bg-secondary/20 border-none text-foreground font-bold text-sm h-6 px-2 rounded-md focus:ring-1 focus:ring-primary w-full outline-none"
+                />
+              </div>
+            ) : (
+              <span 
+                onClick={() => {
+                  setTempAddress(displayAddress);
+                  setIsEditingAddress(true);
+                }}
+                className="font-bold text-foreground truncate animate-in slide-in-from-left-2 duration-700 cursor-pointer hover:text-primary transition-colors flex items-center gap-1"
+              >
+                {displayAddress}
+                <ChevronRight className="w-3 h-3 text-muted-foreground" />
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <button onClick={() => navigate("/search")}><Search className="w-5 h-5 text-foreground" /></button>
-          <button onClick={() => navigate("/help")}><Bell className="w-5 h-5 text-foreground" /></button>
+          <button onClick={() => navigate("/search")} className="p-2 hover:bg-secondary/10 rounded-full transition-colors"><Search className="w-5 h-5 text-foreground" /></button>
+          <button onClick={() => navigate("/help")} className="p-2 hover:bg-secondary/10 rounded-full transition-colors"><Bell className="w-5 h-5 text-foreground" /></button>
         </div>
       </header>
 
@@ -129,13 +170,13 @@ const HomePage = () => {
 
       <div className="md:grid md:grid-cols-2 md:gap-6 md:px-4">
         <div>
-          <div className="mx-4 md:mx-0 mb-4 bg-card border border-border rounded-xl p-3 flex items-center gap-3">
+          <div className="mx-4 md:mx-0 mb-4 bg-card border border-border rounded-xl p-3 flex items-center gap-3 shadow-sm hover:border-primary/30 transition-all cursor-pointer">
             <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
               <Zap className="w-4 h-4 text-primary" />
             </div>
             <div className="flex-1">
               <p className="text-xs font-semibold text-primary uppercase">Fastest Delivery</p>
-              <p className="text-sm text-foreground">Mr Wu's Downtown • 12 mins</p>
+              <p className="text-sm text-foreground">Mr Wu's Tse Addo • 12 mins</p>
             </div>
             <button className="text-primary text-sm font-semibold flex items-center">
               Change <ChevronRight className="w-4 h-4" />

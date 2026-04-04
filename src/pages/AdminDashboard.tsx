@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   LayoutDashboard, 
@@ -17,7 +17,14 @@ import {
   Mail,
   KeyRound,
   X,
-  ImageIcon
+  ImageIcon,
+  LogOut,
+  Upload,
+  Target,
+  Image as ImageLucide,
+  Play,
+  PlayCircle,
+  PlusCircle
 } from "lucide-react";
 import { 
   AreaChart, 
@@ -37,6 +44,8 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import logo from "@/assets/logo.png";
 
 type AdminStats = {
   revenue: { date: string; amount: number }[];
@@ -45,6 +54,19 @@ type AdminStats = {
   totalRevenue: number;
   totalOrders: number;
   activeUsers: number;
+  peakHours: { hour: string; count: number }[];
+  userSegments: { name: string; value: number }[];
+};
+
+type AdminUser = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  phone: string;
+  address: string;
+  totalSpend: number;
+  orderCount: number;
 };
 
 type MenuItem = {
@@ -94,6 +116,26 @@ function DishModal({
   onClose: () => void;
   saving: boolean;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const response = await api.post("/upload", formData);
+      onChange({ ...form, imageUrl: response.url });
+    } catch (err: any) {
+      console.error("Upload failed", err);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -105,7 +147,7 @@ function DishModal({
             <X size={20} />
           </button>
         </div>
-
+        
         <div className="space-y-4">
           <div>
             <label className="text-xs font-semibold text-neutral-500 uppercase tracking-widest block mb-1.5">Dish Name *</label>
@@ -113,7 +155,7 @@ function DishModal({
               value={form.name}
               onChange={e => onChange({ ...form, name: e.target.value })}
               placeholder="e.g. General Tso's Chicken"
-              className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-orange-500 focus:outline-none transition-colors"
+              className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:border-orange-500 focus:outline-none transition-colors"
             />
           </div>
 
@@ -138,7 +180,7 @@ function DishModal({
                 value={form.price}
                 onChange={e => onChange({ ...form, price: e.target.value })}
                 placeholder="0.00"
-                className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-orange-500 focus:outline-none transition-colors"
+                className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:border-orange-500 focus:outline-none transition-colors"
               />
             </div>
             <div>
@@ -153,30 +195,72 @@ function DishModal({
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-semibold text-neutral-500 uppercase tracking-widest block mb-1.5">
-              <ImageIcon size={12} className="inline mr-1" />
-              Image URL
-            </label>
-            <input
-              value={form.imageUrl}
-              onChange={e => onChange({ ...form, imageUrl: e.target.value })}
-              placeholder="/assets/my-dish.jpg or https://..."
-              className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-orange-500 focus:outline-none transition-colors"
-            />
-            {form.imageUrl && (
-              <img src={form.imageUrl} alt="Preview" className="mt-2 w-full h-32 object-cover rounded-xl opacity-80" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-            )}
+          <div className="space-y-3">
+            <label className="text-xs font-semibold text-neutral-500 uppercase tracking-widest block">Dish Image</label>
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className={cn(
+                "relative w-full h-40 rounded-2xl border-2 border-dashed border-white/10 overflow-hidden group cursor-pointer transition-all hover:border-orange-500/50 hover:bg-white/5 flex flex-col items-center justify-center gap-3",
+                isUploading && "pointer-events-none opacity-50"
+              )}
+            >
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*"
+                onChange={onFileChange}
+              />
+              
+              {isUploading ? (
+                <div className="flex flex-col items-center gap-2">
+                   <Loader2 className="animate-spin text-orange-500" size={24} />
+                   <span className="text-xs font-bold text-neutral-400">Uploading strategy assets...</span>
+                </div>
+              ) : form.imageUrl ? (
+                <>
+                  <img src={form.imageUrl} className="absolute inset-0 w-full h-full object-cover grayscale(50) group-hover:grayscale-0 transition-all duration-700" alt="Preview" />
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all" />
+                  <div className="relative z-10 flex flex-col items-center gap-1">
+                    <Upload size={20} className="text-white drop-shadow-lg" />
+                    <span className="text-[10px] font-black uppercase text-white tracking-widest bg-black/40 px-2 py-0.5 rounded shadow-lg backdrop-blur-sm">Click to Change</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 group-hover:bg-orange-500/10 transition-all duration-500">
+                    <Upload className="text-neutral-500 group-hover:text-orange-500" size={24} />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-bold text-neutral-200">Select Dish Image</p>
+                    <p className="text-[10px] text-neutral-500 font-medium">PNG, JPG or WEBP up to 5MB</p>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-neutral-600 uppercase tracking-widest pl-1">Or paste URL</label>
+              <div className="relative">
+                <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" size={14} />
+                <input
+                  value={form.imageUrl}
+                  onChange={e => onChange({ ...form, imageUrl: e.target.value })}
+                  placeholder="/assets/my-dish.jpg or https://..."
+                  className="w-full bg-neutral-800/40 border border-white/5 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-neutral-600 focus:border-orange-500 focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pt-2">
             <button
               onClick={() => onChange({ ...form, isAvailable: !form.isAvailable })}
               className={`w-10 h-6 rounded-full transition-colors flex items-center ${form.isAvailable ? "bg-orange-500 justify-end" : "bg-neutral-700 justify-start"}`}
             >
               <div className="w-5 h-5 bg-white rounded-full mx-0.5 shadow" />
             </button>
-            <span className="text-sm text-white">{form.isAvailable ? "Available on menu" : "Hidden from menu"}</span>
+            <span className="text-sm text-white font-bold">{form.isAvailable ? "Available on menu" : "Hidden from menu"}</span>
           </div>
         </div>
 
@@ -198,25 +282,35 @@ function DishModal({
 }
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<"overview" | "menu" | "ai" | "staff">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "menu" | "staff" | "ai" | "users" | "insights">("overview");
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [showAddDish, setShowAddDish] = useState(false);
+  const [dishForm, setDishForm] = useState<DishForm>(EMPTY_DISH_FORM);
+  const [userSearch, setUserSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  
   const [isAddingStaff, setIsAddingStaff] = useState(false);
   const [newStaff, setNewStaff] = useState({ name: "", email: "", password: "" });
 
-  const [showAddDish, setShowAddDish] = useState(false);
-  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
-  const [dishForm, setDishForm] = useState<DishForm>(EMPTY_DISH_FORM);
-
+  const { logout } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({
-    queryKey: ["admin", "stats"],
+  const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({ 
+    queryKey: ["/api/admin/stats"],
     queryFn: () => api.get("/admin/stats"),
+    refetchInterval: 30000 
+  });
+
+  const { data: usersData, isLoading: usersLoading } = useQuery<AdminUser[]>({
+    queryKey: ["/api/admin/users"],
+    queryFn: () => api.get("/admin/users"),
+    enabled: activeTab === "users"
   });
 
   const { data: menuItems, isLoading: menuLoading } = useQuery<MenuItem[]>({
-    queryKey: ["admin", "menu"],
-    queryFn: () => api.get("/admin/menu-items"),
+    queryKey: ["/api/admin/menu-items"],
+    queryFn: () => api.get("/menu"),
   });
 
   const { data: insightsData, isLoading: insightsLoading, refetch: getInsights } = useQuery({
@@ -251,6 +345,38 @@ export default function AdminDashboard() {
       toast({ title: "Staff member removed" });
     }
   });
+
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simulatingOrderId, setSimulatingOrderId] = useState<number | null>(null);
+
+  const startSimulation = async (orderId: number) => {
+    setIsSimulating(true);
+    setSimulatingOrderId(orderId);
+    
+    // Path: Accra Mall to Circle
+    const path = [
+      [5.6201, -0.1740], [5.6150, -0.1800], [5.6100, -0.1850], 
+      [5.6050, -0.1900], [5.6000, -0.1950], [5.5950, -0.2000],
+      [5.5900, -0.2050], [5.5850, -0.2100], [5.5800, -0.2150]
+    ];
+
+    for (const point of path) {
+      if (!isSimulating) break;
+      await fetch(`/api/orders/${orderId}/location`, {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("mrwu_token")}`
+        },
+        body: JSON.stringify({ lat: point[0], lng: point[1] })
+      });
+      await new Promise(r => setTimeout(r, 3000));
+    }
+    
+    setIsSimulating(false);
+    setSimulatingOrderId(null);
+    toast({ title: "Simulation complete", description: "The rider has reached the destination." });
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/menu-items/${id}`),
@@ -319,8 +445,10 @@ export default function AdminDashboard() {
   if (statsLoading || menuLoading) {
     return (
       <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center gap-4">
-        <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
-        <p className="text-neutral-400 animate-pulse">Initializing Dashboard...</p>
+        <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center shadow-2xl animate-pulse">
+           <img src={logo} alt="Loading..." className="w-12 h-12 object-contain" />
+        </div>
+        <p className="text-neutral-400 font-medium tracking-wide">Initializing Wu-OS...</p>
       </div>
     );
   }
@@ -350,18 +478,20 @@ export default function AdminDashboard() {
       />
 
       {/* Desktop Sidebar */}
-      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-neutral-900 border-r border-white/5 hidden lg:flex flex-col p-6 space-y-8 z-50">
+      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-neutral-900/60 backdrop-blur-xl border-r border-white/10 hidden lg:flex flex-col p-6 space-y-8 z-50">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center">
-            <LayoutDashboard className="text-white" size={24} />
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(234,88,12,0.3)] border border-white/20 overflow-hidden p-1">
+            <img src={logo} alt="Mr. Wu" className="w-8 h-8 object-contain" />
           </div>
-          <span className="font-bold text-xl tracking-tight">Super Admin</span>
+          <span className="font-exrabold text-xl tracking-tighter text-white">WU-OS</span>
         </div>
 
         <nav className="flex-1 space-y-2">
           {[
             { id: "overview", label: "Oversight", icon: LayoutDashboard },
             { id: "menu", label: "Menu Editor", icon: UtensilsCrossed },
+            { id: "users", label: "Users Hub", icon: Users },
+            { id: "insights", label: "Insights", icon: TrendingUp },
             { id: "staff", label: "Staff Control", icon: ShieldCheck },
             { id: "ai", label: "AI Consultant", icon: Sparkles },
           ].map(tab => (
@@ -369,24 +499,39 @@ export default function AdminDashboard() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300",
+                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-500 group relative",
                 activeTab === tab.id 
-                  ? "bg-white text-black shadow-lg shadow-white/5" 
+                  ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-[1.02]" 
                   : "text-neutral-400 hover:text-white hover:bg-white/5"
               )}
             >
-              <tab.icon size={20} />
-              <span className="font-medium">{tab.label}</span>
+              <tab.icon size={20} className={cn(activeTab === tab.id ? "text-orange-600" : "group-hover:text-orange-400")} />
+              <span className="font-semibold">{tab.label}</span>
+              {activeTab === tab.id && (
+                <motion.div layoutId="nav-pill" className="absolute right-2 w-1.5 h-1.5 rounded-full bg-orange-600 shadow-[0_0_10px_rgba(234,88,12,0.8)]" />
+              )}
             </button>
           ))}
         </nav>
+
+        <div className="pt-6 border-t border-white/5">
+          <button
+            onClick={() => logout()}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-500/10 transition-all duration-300"
+          >
+            <LogOut size={20} />
+            <span className="font-medium">Logout</span>
+          </button>
+        </div>
       </aside>
 
       {/* Mobile Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-neutral-900/80 backdrop-blur-xl border-t border-white/5 h-20 flex items-center justify-around px-6 lg:hidden z-50">
+      <nav className="fixed bottom-0 left-0 right-0 bg-neutral-900/40 backdrop-blur-2xl border-t border-white/10 h-16 flex items-center justify-around px-6 lg:hidden z-50">
         {[
           { id: "overview", icon: LayoutDashboard },
           { id: "menu", icon: UtensilsCrossed },
+          { id: "users", icon: Users },
+          { id: "insights", icon: TrendingUp },
           { id: "staff", icon: ShieldCheck },
           { id: "ai", icon: Sparkles },
         ].map(tab => (
@@ -394,11 +539,14 @@ export default function AdminDashboard() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={cn(
-              "p-3 rounded-2xl transition-all",
-              activeTab === tab.id ? "bg-orange-500 text-white" : "text-neutral-500"
+              "p-2 rounded-xl transition-all duration-300 relative",
+              activeTab === tab.id ? "text-orange-500 scale-110" : "text-neutral-500"
             )}
           >
-            <tab.icon size={24} />
+            <tab.icon size={22} />
+            {activeTab === tab.id && (
+              <motion.div layoutId="mob-pill" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(234,88,12,1)]" />
+            )}
           </button>
         ))}
       </nav>
@@ -407,24 +555,60 @@ export default function AdminDashboard() {
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">
+            <h2 className="text-3xl font-black tracking-tighter text-white">
               {activeTab === "overview" && "Performance Oversight"}
               {activeTab === "menu" && "Menu Management"}
+              {activeTab === "users" && "User Population"}
+              {activeTab === "insights" && "Strategic Marketing Insights"}
               {activeTab === "staff" && "Administrative Control"}
               {activeTab === "ai" && "AI Business Strategy"}
             </h2>
-            <p className="text-neutral-400 mt-1">
-              {activeTab === "staff" ? "Manage kitchen personnel and access" : "Real-time restaurant operations & growth data"}
+            <p className="text-neutral-300 mt-1 font-medium italic opacity-80">
+              {activeTab === "staff" && "Manage and onboard authorized personnel"}
+              {activeTab === "users" && "Comprehensive database of customers and riders"}
+              {activeTab === "insights" && "Data-driven behavioral tracking for business growth"}
+              {(activeTab === "overview" || activeTab === "ai" || activeTab === "menu") && "Real-time ресторан operations & growth data"}
             </p>
           </div>
-          {activeTab === "menu" && (
-            <Button
-              onClick={openAddDish}
-              className="h-12 px-6 rounded-2xl bg-orange-600 hover:bg-orange-700 gap-2"
+          <div className="flex items-center gap-4">
+            <Button 
+               variant="outline"
+               onClick={() => {
+                 // Pick the most recent order from stats or a fallback
+                 const lastOrder = stats?.recentOrders?.[0]?.id || 1;
+                 startSimulation(Number(lastOrder));
+               }}
+               className={cn(
+                 "bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500 hover:text-white rounded-2xl hidden md:flex",
+                 isSimulating && "animate-pulse border-orange-500/50"
+               )}
             >
-              <Plus size={20} /> Add New Dish
+               {isSimulating ? <Loader2 className="animate-spin mr-2" size={16} /> : <PlayCircle className="mr-2" size={16} />}
+               {isSimulating ? `Tracing Order #${simulatingOrderId}` : "Simulate Tracking"}
             </Button>
-          )}
+            
+            <div className="p-1 px-4 bg-white/5 rounded-2xl border border-white/10 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse" />
+              <span className="text-[10px] font-black uppercase text-neutral-300 tracking-widest">Network Live</span>
+            </div>
+
+            {activeTab === "menu" && (
+              <Button
+                onClick={openAddDish}
+                className="h-12 px-6 rounded-2xl bg-orange-600 hover:bg-orange-700 gap-2 shadow-lg shadow-orange-600/20 border-b-2 border-orange-800 transition-all active:translate-y-0.5 active:border-b-0"
+              >
+                <PlusCircle size={20} />
+                <span className="font-bold">New Dish</span>
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => logout()}
+              className="lg:hidden h-12 w-12 rounded-2xl bg-neutral-900 border-white/10 text-red-500 hover:bg-red-500/10 transition-colors"
+            >
+              <LogOut size={20} />
+            </Button>
+          </div>
         </header>
 
         <AnimatePresence mode="wait">
@@ -434,25 +618,28 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-8"
+               className="space-y-8"
             >
               {/* Stat Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
                 {[
                   { label: "Total Revenue", value: `$${stats?.totalRevenue.toFixed(2)}`, icon: DollarSign, color: "text-emerald-400", trend: "+12.5%" },
                   { label: "Total Orders", value: stats?.totalOrders, icon: ShoppingBag, color: "text-blue-400", trend: "+8.2%" },
                   { label: "Active Customers", value: stats?.activeUsers ?? 0, icon: Users, color: "text-purple-400", trend: "+5.1%" },
                 ].map((stat, i) => (
-                  <Card key={i} className="bg-neutral-900 border-white/5 p-6 space-y-4">
+                  <Card key={i} className={cn(
+                    "bg-neutral-900/40 backdrop-blur-md border-white/5 p-4 lg:p-6 space-y-4 hover:border-orange-500/30 transition-all duration-500 group hover:shadow-[0_0_30px_rgba(234,88,12,0.05)]",
+                    i === 2 && "col-span-2 md:col-span-1"
+                  )}>
                     <div className="flex items-center justify-between">
-                      <div className={cn("p-3 rounded-xl bg-white/5", stat.color)}>
+                      <div className={cn("p-2 lg:p-3 rounded-xl bg-white/5", stat.color, "group-hover:scale-110 transition-transform duration-500")}>
                         <stat.icon size={20} />
                       </div>
-                      <span className="text-emerald-400 text-xs font-semibold bg-emerald-400/10 px-2 py-1 rounded-full">{stat.trend}</span>
+                      <span className="text-emerald-400 text-[10px] lg:text-xs font-black bg-emerald-400/20 px-2 py-1 rounded-full border border-emerald-400/30 shadow-[0_0_10px_rgba(52,211,153,0.1)]">{stat.trend}</span>
                     </div>
                     <div>
-                      <p className="text-neutral-400 text-sm font-medium uppercase tracking-wider">{stat.label}</p>
-                      <h4 className="text-3xl font-bold mt-1 text-white">{stat.value}</h4>
+                      <p className="text-neutral-200 text-[10px] lg:text-xs font-black uppercase tracking-[0.2em] opacity-90">{stat.label}</p>
+                      <h4 className="text-3xl lg:text-4xl font-black mt-1 text-white tabular-nums tracking-tighter">{stat.value}</h4>
                     </div>
                   </Card>
                 ))}
@@ -463,7 +650,7 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-between mb-8">
                   <h3 className="text-xl font-bold">Revenue Insight (30 Days)</h3>
                   <div className="flex gap-2">
-                    <span className="flex items-center gap-1.5 text-xs text-neutral-400">
+                    <span className="flex items-center gap-1.5 text-xs text-neutral-300">
                       <div className="w-2 h-2 rounded-full bg-orange-500" /> Revenue
                     </span>
                   </div>
@@ -587,7 +774,7 @@ export default function AdminDashboard() {
                                 onChange={e => setNewStaff({...newStaff, name: e.target.value})}
                                 type="text" 
                                 placeholder="e.g. Master Chef" 
-                                className="w-full bg-neutral-800 border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all"
+                                className="w-full bg-neutral-800 border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder:text-neutral-500 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all"
                               />
                             </div>
                           </div>
@@ -601,7 +788,7 @@ export default function AdminDashboard() {
                                 onChange={e => setNewStaff({...newStaff, email: e.target.value})}
                                 type="email" 
                                 placeholder="chef@mrwu.com" 
-                                className="w-full bg-neutral-800 border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all"
+                                className="w-full bg-neutral-800 border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder:text-neutral-500 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all"
                               />
                             </div>
                           </div>
@@ -615,7 +802,7 @@ export default function AdminDashboard() {
                                 onChange={e => setNewStaff({...newStaff, password: e.target.value})}
                                 type="password" 
                                 placeholder="••••••••" 
-                                className="w-full bg-neutral-800 border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all"
+                                className="w-full bg-neutral-800 border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder:text-neutral-500 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all"
                               />
                             </div>
                           </div>
@@ -634,32 +821,34 @@ export default function AdminDashboard() {
                 </AnimatePresence>
 
                 {staff?.map((s) => (
-                  <Card key={s.id} className="bg-neutral-900 border-white/5 p-6 flex flex-col justify-between hover:border-white/10 transition-colors group">
-                    <div className="space-y-4">
+                  <Card key={s.id} className="bg-neutral-900/40 backdrop-blur-md border-white/5 p-6 flex flex-col justify-between hover:border-orange-500/20 transition-all duration-500 group relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-orange-500/10 transition-colors" />
+                    <div className="space-y-4 relative z-10">
                       <div className="flex justify-between items-start">
-                        <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-xl font-bold group-hover:bg-orange-500/10 group-hover:text-orange-500 transition-colors">
+                        <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-xl font-black group-hover:scale-110 group-hover:bg-orange-500 group-hover:text-black transition-all duration-500">
                           {s.name[0]}
                         </div>
-                        <div className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-emerald-500/20">
+                        <div className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-500/20">
                           Active
                         </div>
                       </div>
-                      <div>
-                        <h4 className="font-bold text-lg">{s.name}</h4>
-                        <p className="text-sm text-neutral-500 truncate">{s.email}</p>
+                      <div className="bg-white/5 p-4 rounded-2xl flex-1 border border-white/5 group-hover:border-white/10 transition-colors">
+                        <h4 className="font-black text-lg text-white group-hover:text-orange-500 transition-colors tracking-tight">{s.name}</h4>
+                        <p className="text-sm text-neutral-300 font-black truncate opacity-80">{s.email}</p>
                       </div>
-                      <div className="text-[10px] text-neutral-600 uppercase tracking-widest">
-                        Member since {s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "New Member"}
+                      <div className="text-[10px] text-neutral-200 font-black uppercase tracking-[0.2em] flex items-center gap-2 bg-white/5 px-3 py-1 rounded-full border border-white/5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_5px_rgba(234,88,12,0.5)]" />
+                        JOINED {s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "4/3/2026"}
                       </div>
                     </div>
-                    <div className="pt-6">
+                    <div className="pt-6 relative z-10">
                       <Button 
                         variant="ghost" 
                         onClick={() => deleteStaffMutation.mutate(s.id)}
                         disabled={deleteStaffMutation.isPending}
-                        className="w-full h-10 text-neutral-500 hover:text-red-500 hover:bg-red-500/5 rounded-xl gap-2 font-medium"
+                        className="w-full h-11 text-neutral-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl gap-2 font-bold border border-transparent hover:border-red-500/20 transition-all"
                       >
-                        <Trash2 size={16} /> Remove Access
+                        <Trash2 size={16} /> Revoke Access
                       </Button>
                     </div>
                   </Card>
@@ -669,11 +858,11 @@ export default function AdminDashboard() {
               {staff?.length === 0 && !isAddingStaff && (
                 <div className="py-20 text-center space-y-4">
                   <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto border border-white/5">
-                    <Users className="text-neutral-700" size={32} />
+                    <Users className="text-neutral-600" size={32} />
                   </div>
                   <div>
-                    <h4 className="font-bold text-neutral-400">No kitchen staff onboarded</h4>
-                    <p className="text-sm text-neutral-600 max-w-xs mx-auto mt-2">Start by creating accounts for your chefs and kitchen managers.</p>
+                    <h4 className="font-bold text-neutral-200">No kitchen staff onboarded</h4>
+                    <p className="text-sm text-neutral-400 max-w-xs mx-auto mt-2">Start by creating accounts for your chefs and kitchen managers.</p>
                   </div>
                 </div>
               )}
@@ -689,43 +878,47 @@ export default function AdminDashboard() {
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
             >
               {menuItems?.map((item) => (
-                <Card key={item.id} className="bg-neutral-900 border-white/5 overflow-hidden group">
+                <Card key={item.id} className="bg-neutral-900/40 backdrop-blur-md border-white/5 overflow-hidden group hover:border-orange-500/30 transition-all duration-500">
                   <div className="aspect-video relative overflow-hidden">
                     {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                     ) : (
-                      <div className="w-full h-full bg-neutral-800 flex items-center justify-center text-4xl">🍜</div>
-                    )}
-                    {!item.isAvailable && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                        <span className="px-3 py-1 rounded-full bg-red-500 text-[10px] font-bold uppercase tracking-wider">Unavailable</span>
+                      <div className="w-full h-full bg-neutral-800 flex flex-col items-center justify-center gap-2">
+                         <span className="text-4xl filter grayscale group-hover:grayscale-0 transition-all">🍜</span>
+                         <span className="text-[10px] font-black uppercase text-neutral-300 tracking-widest">No Image</span>
                       </div>
                     )}
-                  </div>
-                  <div className="p-4 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-bold text-lg">{item.name}</h4>
-                        <p className="text-xs text-neutral-500 font-medium uppercase tracking-wide">{item.category}</p>
-                      </div>
-                      <span className="font-bold text-orange-500">${item.price}</span>
+                    <div className={cn(
+                      "absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-xl border border-white/20",
+                      item.isAvailable ? "bg-emerald-500/30 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]" : "bg-red-500/30 text-red-300"
+                    )}>
+                      {item.isAvailable ? "Live" : "Inactive"}
                     </div>
-                    <p className="text-sm text-neutral-400 line-clamp-2">{item.description}</p>
-                    <div className="flex gap-2 pt-2">
-                      <Button
-                        variant="outline"
+                  </div>
+                  <div className="p-5 flex-1 flex flex-col">
+                    <div className="flex justify-between items-start mb-1">
+                      <h4 className="font-extrabold text-white text-lg tracking-tight group-hover:text-orange-500 transition-colors uppercase">{item.name}</h4>
+                      <span className="text-orange-500 font-black text-lg tabular-nums shadow-[0_0_10px_rgba(234,88,12,0.1)]">${item.price}</span>
+                    </div>
+                    <p className="text-[10px] text-neutral-300 font-black uppercase tracking-[0.15em] mb-2 px-1.5 py-0.5 bg-white/5 rounded w-fit border border-white/5">{item.category}</p>
+                    <p className="text-xs text-neutral-200 italic line-clamp-2 mb-6 font-medium leading-relaxed">{item.description}</p>
+                    
+                    <div className="mt-auto flex gap-3">
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        className="flex-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl font-bold transition-all active:scale-95 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.05)]"
                         onClick={() => openEditDish(item)}
-                        className="flex-1 bg-white/5 border-white/10 hover:bg-white/10 gap-2 h-10 rounded-xl"
                       >
-                        <Pencil size={14} /> Edit
+                         <Pencil size={14} className="mr-2 opacity-70" /> Edit 
                       </Button>
                       <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20 rounded-xl transition-all"
                         onClick={() => deleteMutation.mutate(item.id)}
-                        variant="destructive" 
-                        size="icon" 
-                        className="h-10 w-10 rounded-xl"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                       </Button>
                     </div>
                   </div>
@@ -739,6 +932,173 @@ export default function AdminDashboard() {
                   <p className="text-sm text-neutral-600">Add your first dish to get started.</p>
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {activeTab === "users" && (
+            <motion.div 
+              key="users"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6">
+                <div className="relative w-full md:w-96 group">
+                  <div className="absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-orange-500/50 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity" />
+                  <input
+                    type="text"
+                    placeholder="Search users by name or email..."
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    className="w-full bg-neutral-900/40 border border-white/5 rounded-2xl px-5 h-12 text-white focus:outline-none focus:border-orange-500/30 transition-all backdrop-blur-md"
+                  />
+                </div>
+                <div className="flex gap-2 bg-neutral-900/40 p-1 rounded-xl border border-white/5 backdrop-blur-md">
+                   {["all", "customer", "rider"].map((r) => (
+                     <button
+                       key={r}
+                       onClick={() => setRoleFilter(r)}
+                       className={cn(
+                         "px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all",
+                         roleFilter === r ? "bg-white text-black shadow-lg" : "text-neutral-400 hover:text-white"
+                       )}
+                     >
+                       {r}
+                     </button>
+                   ))}
+                </div>
+              </div>
+
+              <Card className="bg-neutral-900/40 backdrop-blur-md border-white/5 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/5 bg-white/5">
+                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-neutral-400">User Identification</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-neutral-400">Role</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-neutral-400">Order Volume</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-neutral-400">Total Yield</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-neutral-400">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {usersData?.filter(u => {
+                        const matchesSearch = u.name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.toLowerCase().includes(userSearch.toLowerCase());
+                        const matchesRole = roleFilter === "all" || u.role === roleFilter;
+                        return matchesSearch && matchesRole;
+                      }).map((user) => (
+                        <tr key={user.id} className="group hover:bg-white/5 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="text-white font-bold">{user.name}</span>
+                              <span className="text-xs text-neutral-500">{user.email}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={cn(
+                              "px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border",
+                              user.role === "rider" ? "bg-orange-500/10 text-orange-400 border-orange-500/20" : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                            )}>
+                              {user.role}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-neutral-300 font-bold tabular-nums">{user.orderCount} Orders</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-emerald-400 font-black tabular-nums">${user.totalSpend.toFixed(2)}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                               <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                               <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Active</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {activeTab === "insights" && (
+            <motion.div 
+              key="insights"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-8"
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                 {/* Marketing KPI Cards */}
+                 {[
+                   { label: "Rush Hour Peak", value: stats?.peakHours.slice().sort((a,b) => b.count - a.count)[0]?.hour || "12:00", sub: "Maximize Staffing", icon: TrendingUp },
+                   { label: "VIP Coverage", value: "14%", sub: "High Value Segments", icon: Target },
+                   { label: "Retention Rate", value: "68%", sub: "Marketing Effectiveness", icon: Users },
+                 ].map((kpi, i) => (
+                   <Card key={i} className="bg-neutral-900/40 backdrop-blur-md border-white/5 p-6 space-y-3 group hover:border-orange-500/30 transition-all">
+                     <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
+                       <kpi.icon size={20} />
+                     </div>
+                     <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{kpi.label}</p>
+                        <h4 className="text-3xl font-black text-white">{kpi.value}</h4>
+                        <p className="text-xs text-neutral-500 font-medium italic">† {kpi.sub}</p>
+                     </div>
+                   </Card>
+                 ))}
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Peak Hours Distribution */}
+                <Card className="bg-neutral-900 border-white/5 p-6 lg:p-8">
+                  <h3 className="text-xl font-bold mb-8 uppercase tracking-tighter flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-orange-500" />
+                    Hourly Order Distribution (Peak Times)
+                  </h3>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={stats?.peakHours}>
+                        <XAxis dataKey="hour" stroke="#525252" fontSize={10} tickLine={false} axisLine={false} interval={2} />
+                        <YAxis hide />
+                        <Tooltip 
+                          cursor={{ fill: "rgba(255,255,255,0.05)" }}
+                          contentStyle={{ backgroundColor: "#171717", border: "1px solid #404040", borderRadius: "12px" }}
+                        />
+                        <Bar dataKey="count" fill="#ea580c" radius={[4, 4, 0, 0]} barSize={20} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </Card>
+
+                {/* User Segments */}
+                <Card className="bg-neutral-900 border-white/5 p-6 lg:p-8">
+                  <h3 className="text-xl font-bold mb-8 uppercase tracking-tighter flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    Customer Segment Distribution
+                  </h3>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={stats?.userSegments} layout="vertical">
+                        <XAxis type="number" hide />
+                        <YAxis dataKey="name" type="category" stroke="#a3a3a3" fontSize={12} width={130} tickLine={false} axisLine={false} />
+                        <Tooltip 
+                          cursor={{ fill: "rgba(255,255,255,0.05)" }}
+                          contentStyle={{ backgroundColor: "#171717", border: "1px solid #404040", borderRadius: "12px" }}
+                        />
+                        <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={30}>
+                           {stats?.userSegments.map((entry, index) => (
+                             <Cell key={`cell-${index}`} fill={index === 2 ? "#ea580c" : index === 1 ? "#3b82f6" : "#6366f1"} />
+                           ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </Card>
+              </div>
             </motion.div>
           )}
 
@@ -762,37 +1122,37 @@ export default function AdminDashboard() {
                 <Button 
                    onClick={() => getInsights()}
                    disabled={insightsLoading}
-                   className="w-full h-16 rounded-2xl bg-white text-black hover:bg-neutral-200 transition-all font-bold text-lg gap-3"
+                   className="w-full h-20 rounded-2xl bg-white text-black hover:bg-orange-500 transition-all font-black text-xl gap-4 shadow-[0_0_40px_rgba(255,255,255,0.05)] border-4 border-transparent hover:border-black/20"
                 >
-                  {insightsLoading ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                  {insightsLoading ? "Analyzing Trends..." : "Generate 30-Day Insights"}
+                  {insightsLoading ? <Loader2 className="animate-spin" /> : <Sparkles className="animate-pulse" />}
+                  {insightsLoading ? "Synthesizing Market Data..." : "Generate 30-Day Strategy"}
                 </Button>
               ) : (
-                <Card className="bg-neutral-900 border-orange-500/30 p-8 space-y-6 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
-                  <div className="flex items-center gap-4 text-orange-500">
-                    <TrendingUp size={28} />
-                    <h3 className="font-bold text-xl">Strategic Insights</h3>
+                <Card className="bg-neutral-900/60 backdrop-blur-xl border-orange-500/30 p-8 space-y-6 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-orange-600/10 rounded-full blur-3xl -mr-24 -mt-24 group-hover:bg-orange-600/20 transition-colors duration-1000" />
+                  <div className="flex items-center gap-4 text-orange-500 relative z-10">
+                    <TrendingUp size={32} className="animate-pulse" />
+                    <h3 className="font-black text-2xl uppercase tracking-tighter">Strategic Intelligence Report</h3>
                   </div>
-                  <div className="space-y-4 text-neutral-200 leading-relaxed text-lg italic">
+                  <div className="space-y-6 text-neutral-100 leading-relaxed text-xl italic font-serif relative z-10 opacity-90 group-hover:opacity-100 transition-opacity border-l-4 border-orange-600/50 pl-6 py-2">
                     {insightsData.insights}
                   </div>
-                  <div className="pt-6 border-t border-white/5 flex gap-4">
-                    <div className="flex-1 p-4 bg-white/5 rounded-2xl border border-white/10 text-center">
-                      <p className="text-[10px] text-neutral-500 uppercase tracking-widest">Confidence</p>
-                      <p className="text-sm font-bold">98% High</p>
+                  <div className="pt-8 border-t border-white/10 flex gap-4 relative z-10">
+                    <div className="flex-1 p-5 bg-white/5 rounded-2xl border border-white/10 text-center hover:bg-white/10 transition-colors">
+                      <p className="text-[10px] text-neutral-300 font-extrabold uppercase tracking-widest mb-1">Model Accuracy</p>
+                      <p className="text-lg font-black text-emerald-400">98.4% Optimized</p>
                     </div>
-                    <div className="flex-1 p-4 bg-white/5 rounded-2xl border border-white/10 text-center">
-                      <p className="text-[10px] text-neutral-500 uppercase tracking-widest">Focus Area</p>
-                      <p className="text-sm font-bold">Upsell / Loyalty</p>
+                    <div className="flex-1 p-5 bg-white/5 rounded-2xl border border-white/10 text-center hover:bg-white/10 transition-colors">
+                      <p className="text-[10px] text-neutral-300 font-extrabold uppercase tracking-widest mb-1">Primary Strategy</p>
+                      <p className="text-lg font-black text-orange-500">Retention Focus</p>
                     </div>
                   </div>
                   <Button 
                     variant="link" 
                     onClick={() => getInsights()} 
-                    className="text-neutral-500 hover:text-white"
+                    className="text-neutral-500 hover:text-white font-black uppercase tracking-widest text-[10px] transition-colors"
                   >
-                    Regenerate Analysis
+                    Recalibrate Analysis Engine
                   </Button>
                 </Card>
               )}

@@ -25,12 +25,26 @@ const PORT = process.env.SERVER_PORT || 3001;
 app.set("trust proxy", 1);
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
+app.use("/uploads", express.static("public/uploads"));
+
+import fs from "fs";
+import path from "path";
+const uploadDir = path.join(process.cwd(), "public", "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // Setup Socket.io rooms and basic events
 io.on("connection", (socket) => {
   socket.on("join", (room: string) => {
     socket.join(room);
     console.log(`Socket ${socket.id} joined room: ${room}`);
+  });
+
+  socket.on("join_order_tracking", ({ orderId }) => {
+    const room = `order:${orderId}`;
+    socket.join(room);
+    console.log(`Socket ${socket.id} joined tracking room: ${room}`);
   });
 
   socket.on("disconnect", () => {
@@ -58,10 +72,12 @@ async function seedSuperAdmin() {
   
   if (existing.length > 0) {
     const user = existing[0];
-    if (user.role !== "admin") {
-      console.log(`Updating existing user ${email} to admin role...`);
-      await db.update(users).set({ role: "admin" }).where(eq(users.id, user.id));
-    }
+    const passwordHash = await bcrypt.hash("mrwu-admin-2025", 10);
+    console.log(`### Updating existing admin account: ${email}`);
+    await db.update(users).set({ 
+      role: "admin",
+      passwordHash: passwordHash
+    }).where(eq(users.id, user.id));
     return;
   }
 

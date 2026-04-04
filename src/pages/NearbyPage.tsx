@@ -5,9 +5,11 @@ import AppHeader from "@/components/layout/AppHeader";
 import "leaflet/dist/leaflet.css";
 
 const locations = [
-  { name: "Mr Wu's Downtown", badge: "⚡FASTEST", address: "123 Dragon Way, Center City", dist: "0.8 mi", rating: 4.8, time: "15-20 min", status: "Open", lat: 51.5074, lng: -0.1278 },
-  { name: "Wu's Express North", address: "456 Bamboo Lane, Northside", dist: "2.4 mi", rating: 4.5, time: "25-35 min", status: "Open", lat: 51.5300, lng: -0.1200 },
-  { name: "Mr Wu's Garden Hills", address: "789 Lotus St, West Side", dist: "3.1 mi", rating: 4.2, time: "30-45 min", status: "Closing Soon", lat: 51.5020, lng: -0.1700 },
+  { name: "Mr. Wu's Tse Addo", badge: "⚡FASTEST", address: "Tse Addo, Accra, Ghana", dist: "0.8 mi", rating: 4.8, time: "15-20 min", status: "Open", lat: 5.6020, lng: -0.1118 },
+  { name: "Mr. Wu's Adjiringanor", address: "Adjiringanor, Accra, Ghana", dist: "2.4 mi", rating: 4.5, time: "25-35 min", status: "Open", lat: 5.6512, lng: -0.1485 },
+  { name: "Mr. Wu's UG Legon", address: "Bani Hostel, UG, Legon", dist: "3.1 mi", rating: 4.2, time: "30-45 min", status: "Closing Soon", lat: 5.6540, lng: -0.1865 },
+  { name: "Mr. Wu's Awoshie", address: "Awoshie, Accra, Ghana", dist: "4.5 mi", rating: 4.3, time: "35-50 min", status: "Open", lat: 5.5925, lng: -0.2740 },
+  { name: "Mr. Wu's Dansoman", address: "Dansoman, Accra, Ghana", dist: "5.2 mi", rating: 4.6, time: "40-55 min", status: "Open", lat: 5.5545, lng: -0.2520 },
 ];
 
 const NearbyPage = () => {
@@ -27,7 +29,7 @@ const NearbyPage = () => {
       });
 
       const map = L.map(mapRef.current!, {
-        center: [51.515, -0.14],
+        center: [5.6037, -0.1870], // Accra center
         zoom: 12,
         zoomControl: true,
         scrollWheelZoom: false,
@@ -94,7 +96,7 @@ const NearbyPage = () => {
               <div>
                 <h3 className="font-bold text-sm text-foreground">AI Tip: Fastest Choice</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  The <strong>Downtown</strong> location has the lowest kitchen volume right now. Save <strong>12 minutes</strong> by ordering here!
+                  The <strong>Tse Addo</strong> location has the lowest kitchen volume right now. Save <strong>12 minutes</strong> by ordering here!
                 </p>
               </div>
             </div>
