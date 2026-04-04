@@ -35,6 +35,7 @@ RUN npm install --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server ./server
 COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/tsconfig*.json ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/sqlite_v2.db ./sqlite_v2.db
@@ -44,9 +45,11 @@ RUN mkdir -p public/uploads
 
 # Set environment to production
 ENV NODE_ENV=production
+# Primary port variable for cloud platforms
+ENV PORT=3001
 ENV SERVER_PORT=3001
 
 EXPOSE 3001
 
-# Start the server using tsx (as it's in the dependencies list)
+# Start the server using tsx
 CMD ["npx", "tsx", "server/index.ts"]

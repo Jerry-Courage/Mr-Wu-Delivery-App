@@ -23,7 +23,7 @@ const io = new Server(httpServer, {
 // In-memory chat history keyed by orderId (max 100 messages per order)
 const chatHistory = new Map<number, { id: string; senderRole: string; senderName: string; text: string; timestamp: number }[]>();
 
-const PORT = process.env.SERVER_PORT || 3001;
+const PORT = Number(process.env.PORT) || Number(process.env.SERVER_PORT) || 3001;
 
 app.set("trust proxy", 1);
 app.use(cors({ origin: true, credentials: true }));
@@ -150,8 +150,8 @@ async function seedMenuItems() {
   console.log("Menu items seeded");
 }
 
-httpServer.listen(PORT, async () => {
-  console.log(`Backend running on http://localhost:${PORT} with WebSockets enabled`);
+httpServer.listen(PORT, "0.0.0.0", async () => {
+  console.log(`Backend running on http://0.0.0.0:${PORT} with WebSockets enabled`);
   try {
     await seedSuperAdmin();
     await seedMenuItems();
