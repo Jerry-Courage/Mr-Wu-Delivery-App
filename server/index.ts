@@ -144,6 +144,47 @@ async function seedSuperAdmin() {
   console.log("Super Admin seeded: admin@mrwu.com / mrwu-admin-2025");
 }
 
+async function initializeDatabase() {
+  console.log("### DB_CHECKPOINT: Running self-healing migrations...");
+  try {
+    // Get raw better-sqlite3 database instance from drizzle
+    // @ts-ignore - access internal sqlite instance for raw pragma checks
+    const sqlite = db.session.client;
+
+    // 1. Check/Add columns to users table
+    const tableInfo = sqlite.prepare("PRAGMA table_info(users)").all() as any[];
+    const columns = tableInfo.map((c) => c.name);
+
+    if (!columns.includes("points")) {
+      console.log("### DB_CHECKPOINT: Adding 'points' column to users...");
+      sqlite.prepare("ALTER TABLE users ADD COLUMN points INTEGER DEFAULT 0").run();
+    }
+    if (!columns.includes("allergies")) {
+      console.log("### DB_CHECKPOINT: Adding 'allergies' column to users...");
+      sqlite.prepare("ALTER TABLE users ADD COLUMN allergies TEXT").run();
+    }
+
+    // 2. Check/Create favorites table
+    const favoritesTable = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='favorites'").get();
+    if (!favoritesTable) {
+      console.log("### DB_CHECKPOINT: Creating 'favorites' table...");
+      sqlite.prepare(`
+        CREATE TABLE favorites (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL REFERENCES users(id),
+          menu_item_id INTEGER NOT NULL REFERENCES menu_items(id),
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `).run();
+    }
+    
+    console.log("### DB_CHECKPOINT: Database structure verified");
+  } catch (err) {
+    console.error("### DB_ERROR: Self-healing migration failed:", err);
+    // Don't exit process, try for seed even if migration partially failed
+  }
+}
+
 async function seedStaffAccounts() {
   const staff = [
     { email: "chef@mrwu.com", name: "Chef Wu", role: "kitchen" as const },
@@ -197,6 +238,7 @@ httpServer.listen(PORT, "0.0.0.0", async () => {
       console.error("### AI_CHECK: No OPENROUTER_API_KEY detected in environment!");
     }
     console.log("### SERVER_CHECKPOINT: Running initialization seeds...");
+    await initializeDatabase();
     await seedSuperAdmin();
     await seedStaffAccounts();
     await seedMenuItems();
