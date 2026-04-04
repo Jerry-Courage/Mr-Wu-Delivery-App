@@ -170,15 +170,18 @@ const HomePage = () => {
 
       <div className="md:grid md:grid-cols-2 md:gap-6 md:px-4">
         <div>
-          <div className="mx-4 md:mx-0 mb-4 bg-card border border-border rounded-xl p-3 flex items-center gap-3 shadow-sm hover:border-primary/30 transition-all cursor-pointer">
-            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+          <div 
+            onClick={() => navigate("/nearby")}
+            className="mx-4 md:mx-0 mb-4 bg-card border border-border rounded-xl p-3 flex items-center gap-3 shadow-sm hover:border-primary/30 transition-all cursor-pointer group"
+          >
+            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center group-hover:bg-primary/20 transition-colors">
               <Zap className="w-4 h-4 text-primary" />
             </div>
             <div className="flex-1">
               <p className="text-xs font-semibold text-primary uppercase">Fastest Delivery</p>
               <p className="text-sm text-foreground">Mr Wu's Tse Addo • 12 mins</p>
             </div>
-            <button className="text-primary text-sm font-semibold flex items-center">
+            <button className="text-primary text-sm font-semibold flex items-center hover:translate-x-0.5 transition-transform">
               Change <ChevronRight className="w-4 h-4" />
             </button>
           </div>
