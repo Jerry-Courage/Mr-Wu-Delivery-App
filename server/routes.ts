@@ -521,7 +521,7 @@ router.post("/ai/support", aiLimiter, async (req: AuthRequest, res) => {
     const reply = await getSupportResponse(message, history || []);
     res.json({ reply });
   } catch (err) {
-    console.error("AI support error:", err);
+    console.error("### AI_SUPPORT_ROUTE_ERROR:", err);
     res.json({ reply: "I'm here to help! Please contact us at support@mrwu.com or call our hotline for urgent issues." });
   }
 });

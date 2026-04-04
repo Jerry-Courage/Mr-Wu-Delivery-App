@@ -21,7 +21,10 @@ interface Message {
 
 function getKey(): string {
   const key = process.env.OPENROUTER_API_KEY;
-  if (!key) throw new Error("OPENROUTER_API_KEY not set");
+  if (!key) {
+    console.error("### AI_ERROR: OPENROUTER_API_KEY is not set in the environment!");
+    throw new Error("OPENROUTER_API_KEY not set");
+  }
   return key;
 }
 
@@ -99,6 +102,8 @@ async function chat(messages: Message[]): Promise<string> {
     }
   }
 
+  const errorMessage = lastError ? lastError.message : "All AI models failed";
+  console.error(`### AI_FATAL: ${errorMessage}`);
   throw lastError || new Error("All AI models failed");
 }
 
