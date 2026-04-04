@@ -2,12 +2,12 @@ const BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 const MODELS = [
   "openrouter/auto",
+  "google/gemini-2.0-flash-lite-preview-02-05:free",
   "google/gemma-3-4b-it:free",
-  "meta-llama/llama-3.2-3b-instruct:free",
-  "qwen/qwen3-coder:free",
-  "arcee-ai/trinity-mini:free",
-  "liquid/lfm-2.5-1.2b-instruct:free",
-  "nvidia/nemotron-nano-9b-v2:free",
+  "meta-llama/llama-3.2-11b-vision-instruct:free",
+  "deepseek/deepseek-chat:free",
+  "qwen/qwen2.5-7b-instruct:free",
+  "mistralai/mistral-7b-instruct:free",
 ];
 
 // Track rate-limited models with a cooldown timestamp
@@ -64,7 +64,7 @@ async function chat(messages: Message[]): Promise<string> {
         body: JSON.stringify({
           model: modelId,
           messages: sanitizedMessages,
-          max_tokens: 400,
+          max_tokens: 150,
           temperature: 0.7,
         }),
       });
@@ -127,19 +127,14 @@ export async function getRecommendations(
     ? recentOrders.slice(0, 3).map(o => o.items.map(i => i.name).join(", ")).join(" | ")
     : "No previous orders";
 
-  const prompt = `You are an AI food recommender for Mr Wu's Chinese delivery restaurant.
-
-Menu:
+  const prompt = `Menu:
 ${menuText}
-
-Customer's recent orders: ${historyText}
-Time of day: ${timeOfDay}
-
-Pick the 4 best items to recommend. Respond with valid JSON only, no markdown:
-[{"id":"1","name":"General Tso's Chicken","reason":"Your top rated pick","confidence":0.95}]`;
+Orders: ${historyText}
+Time: ${timeOfDay}
+Respond with 4 best JSON recommendations only: [{"id":"1","name":"Item","reason":"reason","confidence":0.95}]`;
 
   const response = await chat([
-    { role: "system", content: "You are a food recommendation AI. Always respond with valid JSON arrays only." },
+    { role: "system", content: "You are a food recommender. Respond with JSON arrays only." },
     { role: "user", content: prompt },
   ]);
 
@@ -221,10 +216,10 @@ export async function searchMenu(
     .map(i => `ID:${i.id} "${i.name}" (${i.category}, $${i.price}) - ${i.description}${i.tags?.length ? " [" + i.tags.join(", ") + "]" : ""}`)
     .join("\n");
 
-  const prompt = `Menu assistant at Mr Wu's.\nMenu:\n${menuText}\nQuery: "${query}"\nFind best matches. Return valid JSON only:\n{"message":"Here are some options!","itemIds":[1,3]}`;
+  const prompt = `Menu:\n${menuText}\nQuery: "${query}"\nRespond with best matches as valid JSON only: {"message":"Msg","itemIds":[1,3]}`;
 
   const response = await chat([
-    { role: "system", content: "You are a helpful restaurant food assistant. Always respond with valid JSON only." },
+    { role: "system", content: "You are a restaurant assistant. Always respond with valid JSON only." },
     { role: "user", content: prompt },
   ]);
 
