@@ -96014,10 +96014,10 @@ var PgEnumColumn = class extends PgColumn {
 // node_modules/drizzle-orm/subquery.js
 var Subquery = class {
   static [entityKind] = "Subquery";
-  constructor(sql3, fields, alias, isWith = false, usedTables = []) {
+  constructor(sql2, fields, alias, isWith = false, usedTables = []) {
     this._ = {
       brand: "Subquery",
-      sql: sql3,
+      sql: sql2,
       selectedFields: fields,
       alias,
       isWith,
@@ -96353,19 +96353,19 @@ function sql(strings, ...params) {
   }
   return new SQL(queryChunks);
 }
-((sql22) => {
+((sql2) => {
   function empty() {
     return new SQL([]);
   }
-  sql22.empty = empty;
+  sql2.empty = empty;
   function fromList(list) {
     return new SQL(list);
   }
-  sql22.fromList = fromList;
+  sql2.fromList = fromList;
   function raw(str) {
     return new SQL([new StringChunk(str)]);
   }
-  sql22.raw = raw;
+  sql2.raw = raw;
   function join(chunks, separator) {
     const result = [];
     for (const [i, chunk] of chunks.entries()) {
@@ -96376,24 +96376,24 @@ function sql(strings, ...params) {
     }
     return new SQL(result);
   }
-  sql22.join = join;
+  sql2.join = join;
   function identifier(value) {
     return new Name(value);
   }
-  sql22.identifier = identifier;
+  sql2.identifier = identifier;
   function placeholder2(name2) {
     return new Placeholder(name2);
   }
-  sql22.placeholder = placeholder2;
+  sql2.placeholder = placeholder2;
   function param2(value, encoder) {
     return new Param(value, encoder);
   }
-  sql22.param = param2;
+  sql2.param = param2;
 })(sql || (sql = {}));
 ((SQL2) => {
   class Aliased {
-    constructor(sql22, fieldAlias) {
-      this.sql = sql22;
+    constructor(sql2, fieldAlias) {
+      this.sql = sql2;
       this.fieldAlias = fieldAlias;
     }
     static [entityKind] = "SQL.Aliased";
@@ -98428,8 +98428,8 @@ var SQLiteDialect = class {
     const onConflictSql = onConflict?.length ? sql.join(onConflict) : void 0;
     return sql`${withSql}insert into ${table} ${insertOrder} ${valuesSql}${onConflictSql}${returningSql}`;
   }
-  sqlToQuery(sql22, invokeSource) {
-    return sql22.toQuery({
+  sqlToQuery(sql2, invokeSource) {
+    return sql2.toQuery({
       casing: this.casing,
       escapeName: this.escapeName,
       escapeParam: this.escapeParam,
@@ -100350,8 +100350,8 @@ var NoopCache = class extends Cache {
   async onMutate(_params) {
   }
 };
-async function hashQuery(sql3, params) {
-  const dataToHash = `${sql3}-${JSON.stringify(params)}`;
+async function hashQuery(sql2, params) {
+  const dataToHash = `${sql2}-${JSON.stringify(params)}`;
   const encoder = new TextEncoder();
   const data = encoder.encode(dataToHash);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
@@ -100535,8 +100535,8 @@ var SQLiteSession = class {
   values(query) {
     return this.prepareOneTimeQuery(this.dialect.sqlToQuery(query), void 0, "run", false).values();
   }
-  async count(sql3) {
-    const result = await this.values(sql3);
+  async count(sql2) {
+    const result = await this.values(sql2);
     return result[0][0];
   }
   /** @internal */
@@ -100720,6 +100720,8 @@ var import_better_sqlite33 = __toESM(require("better-sqlite3"), 1);
 // shared/schema.ts
 var schema_exports = {};
 __export(schema_exports, {
+  favorites: () => favorites,
+  insertFavoriteSchema: () => insertFavoriteSchema,
   insertOrderItemSchema: () => insertOrderItemSchema,
   insertOrderSchema: () => insertOrderSchema,
   insertUserSchema: () => insertUserSchema,
@@ -104792,6 +104794,8 @@ var users = sqliteTable("users", {
   phone: text("phone"),
   role: text("role", { enum: roles }).notNull().default("customer"),
   address: text("address"),
+  points: integer("points").notNull().default(0),
+  allergies: text("allergies"),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`).notNull()
 });
 var menuItems = sqliteTable("menu_items", {
@@ -104845,13 +104849,21 @@ var orderItems = sqliteTable("order_items", {
   // Stored as JSON string
   specialInstructions: text("special_instructions")
 });
+var favorites = sqliteTable("favorites", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull().references(() => users.id),
+  menuItemId: integer("menu_item_id").notNull().references(() => menuItems.id),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`).notNull()
+});
 var insertUserSchema = external_exports.object({
   email: external_exports.string().email(),
   password: external_exports.string().min(6),
   name: external_exports.string().min(1),
   phone: external_exports.string().optional(),
   role: external_exports.enum(roles).optional(),
-  address: external_exports.string().optional()
+  address: external_exports.string().optional(),
+  points: external_exports.number().optional(),
+  allergies: external_exports.string().optional()
 });
 var insertOrderSchema = external_exports.object({
   userId: external_exports.number().int(),
@@ -104872,6 +104884,10 @@ var insertOrderItemSchema = external_exports.object({
   quantity: external_exports.number().int().min(1),
   extras: external_exports.string().optional(),
   specialInstructions: external_exports.string().optional()
+});
+var insertFavoriteSchema = external_exports.object({
+  userId: external_exports.number().int(),
+  menuItemId: external_exports.number().int()
 });
 
 // server/db.ts
@@ -107540,6 +107556,7 @@ var Storage = class {
       phone: data.phone,
       role: data.role ?? "customer",
       address: data.address,
+      points: 0,
       createdAt: /* @__PURE__ */ new Date()
     }).returning();
     return user;
@@ -107678,6 +107695,10 @@ var Storage = class {
   }
   async updateOrderStatus(id, status) {
     const [order] = await db.update(orders).set({ status, updatedAt: /* @__PURE__ */ new Date() }).where(eq(orders.id, id)).returning();
+    if (status === "delivered" && order) {
+      const pointsEarned = Math.floor(parseFloat(order.total) * 10);
+      await db.update(users).set({ points: sql`${users.points} + ${pointsEarned}` }).where(eq(users.id, order.userId));
+    }
     return order;
   }
   async updatePaymentStatus(id, status, transactionId) {
@@ -107693,11 +107714,32 @@ var Storage = class {
     if (data.name !== void 0) updates.name = data.name;
     if (data.phone !== void 0) updates.phone = data.phone;
     if (data.address !== void 0) updates.address = data.address;
+    if (data.allergies !== void 0) updates.allergies = data.allergies;
     if (Object.keys(updates).length === 0) {
       return this.getUserById(id);
     }
     const [user] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
     return user ?? null;
+  }
+  // Favorites
+  async getFavorites(userId) {
+    const userFavs = await db.select().from(favorites).where(eq(favorites.userId, userId));
+    if (userFavs.length === 0) return [];
+    const itemIds = userFavs.map((f) => f.menuItemId);
+    return db.select().from(menuItems).where(sql`${menuItems.id} IN (${sql.join(itemIds, sql`, `)})`);
+  }
+  async addFavorite(userId, menuItemId) {
+    const existing = await db.select().from(favorites).where(
+      and(eq(favorites.userId, userId), eq(favorites.menuItemId, menuItemId))
+    );
+    if (existing.length === 0) {
+      await db.insert(favorites).values({ userId, menuItemId });
+    }
+  }
+  async removeFavorite(userId, menuItemId) {
+    await db.delete(favorites).where(
+      and(eq(favorites.userId, userId), eq(favorites.menuItemId, menuItemId))
+    );
   }
   async assignRider(orderId, riderId) {
     const [order] = await db.update(orders).set({ riderId, status: "assigned", updatedAt: /* @__PURE__ */ new Date() }).where(eq(orders.id, orderId)).returning();
@@ -107807,12 +107849,14 @@ var storage = new Storage();
 var BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
 var MODELS = [
   "openrouter/auto",
-  "google/gemini-2.0-flash-lite-preview-02-05:free",
-  "google/gemma-3-4b-it:free",
-  "meta-llama/llama-3.2-11b-vision-instruct:free",
-  "deepseek/deepseek-chat:free",
-  "qwen/qwen2.5-7b-instruct:free",
-  "mistralai/mistral-7b-instruct:free"
+  "openrouter/free",
+  // New smart router for free models
+  "google/gemini-2.0-flash-lite-001:free",
+  "deepseek/deepseek-r1:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "qwen/qwen-2.5-coder-32b-instruct:free",
+  "mistralai/mistral-small-24b-instruct-2501:free",
+  "google/gemini-2.0-flash-exp:free"
 ];
 var rateLimitedUntil = {};
 var COOLDOWN_MS = 10 * 60 * 1e3;
@@ -107888,13 +107932,14 @@ async function chat(messages) {
   console.error(`### AI_FATAL: ${errorMessage}`);
   throw lastError || new Error("All AI models failed");
 }
-async function getRecommendations(menuItems2, recentOrders, timeOfDay) {
+async function getRecommendations(menuItems2, recentOrders, timeOfDay, allergies) {
   const menuText = menuItems2.map((i) => `ID:${i.id} "${i.name}" (${i.category}, $${i.price}${i.tags?.length ? ", " + i.tags.join("/") : ""})`).join("\n");
   const historyText = recentOrders.length > 0 ? recentOrders.slice(0, 3).map((o) => o.items.map((i) => i.name).join(", ")).join(" | ") : "No previous orders";
   const prompt = `Menu:
 ${menuText}
 Orders: ${historyText}
 Time: ${timeOfDay}
+Allergies/Preferences: ${allergies || "None"}. DO NOT recommend any dishes containing these allergens or violating these preferences.
 Respond with 4 best JSON recommendations only: [{"id":"1","name":"Item","reason":"reason","confidence":0.95}]`;
   const response = await chat([
     { role: "system", content: "You are a food recommender. Respond with JSON arrays only." },
@@ -108084,13 +108129,31 @@ router.post("/auth/login", async (req, res) => {
 router.get("/auth/me", auth, async (req, res) => {
   const user = await storage.getUserById(req.user.id);
   if (!user) return res.status(404).json({ error: "User not found" });
-  res.json({ id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone, address: user.address });
+  res.json({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    phone: user.phone,
+    address: user.address,
+    points: user.points,
+    allergies: user.allergies
+  });
 });
 router.patch("/auth/profile", auth, async (req, res) => {
-  const { name, phone, address } = req.body;
-  const user = await storage.updateUserProfile(req.user.id, { name, phone, address });
+  const { name, phone, address, allergies } = req.body;
+  const user = await storage.updateUserProfile(req.user.id, { name, phone, address, allergies });
   if (!user) return res.status(404).json({ error: "User not found" });
-  res.json({ id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone, address: user.address });
+  res.json({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    phone: user.phone,
+    address: user.address,
+    points: user.points,
+    allergies: user.allergies
+  });
 });
 router.get("/menu", async (_req, res) => {
   const items = await storage.getMenuItems();
@@ -108272,16 +108335,22 @@ router.patch("/rider/orders/:id/status", auth, requireRole("rider"), async (req,
 router.get("/ai/recommendations", aiLimiter, async (req, res) => {
   try {
     const menuItems2 = await storage.getMenuItems();
-    const recentOrders = req.headers.authorization ? await (async () => {
-      const token = req.headers.authorization?.split(" ")[1];
-      if (!token) return [];
+    const { recentOrders, allergies } = await (async () => {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) return { recentOrders: [], allergies: null };
+      const token = authHeader.split(" ")[1];
+      if (!token) return { recentOrders: [], allergies: null };
       try {
-        const decoded = import_jsonwebtoken.default.verify(token, JWT_SECRET);
-        return await storage.getOrdersByUser(decoded.id);
+        const decoded = import_jsonwebtoken.default.verify(token, process.env.JWT_SECRET || "fallback-secret");
+        const [orders2, user] = await Promise.all([
+          storage.getOrdersByUser(decoded.id),
+          storage.getUserById(decoded.id)
+        ]);
+        return { recentOrders: orders2, allergies: user?.allergies };
       } catch {
-        return [];
+        return { recentOrders: [], allergies: null };
       }
-    })() : [];
+    })();
     const hour = (/* @__PURE__ */ new Date()).getHours();
     const timeOfDay = hour < 11 ? "morning" : hour < 15 ? "afternoon" : hour < 21 ? "evening" : "night";
     const simplified = menuItems2.map((m) => ({
@@ -108291,7 +108360,7 @@ router.get("/ai/recommendations", aiLimiter, async (req, res) => {
       price: m.price,
       tags: m.tags ? JSON.parse(m.tags) : []
     }));
-    const recs = await getRecommendations(simplified, recentOrders, timeOfDay);
+    const recs = await getRecommendations(simplified, recentOrders, timeOfDay, allergies);
     res.json(recs);
   } catch (err) {
     console.error("AI recommendations error:", err);
@@ -108458,6 +108527,32 @@ router.post("/support/email", auth, async (req, res) => {
   console.log(`### SUPPORT TICKET from ${req.user.email}: [${subject}] ${message}`);
   res.json({ success: true, message: "Support ticket received. We'll get back to you soon!" });
 });
+router.get("/api/favorites", auth, async (req, res) => {
+  const favs = await storage.getFavorites(req.user.id);
+  res.json(favs);
+});
+router.post("/api/favorites/:id", auth, async (req, res) => {
+  await storage.addFavorite(req.user.id, Number(req.params.id));
+  res.sendStatus(201);
+});
+router.delete("/api/favorites/:id", auth, async (req, res) => {
+  await storage.removeFavorite(req.user.id, Number(req.params.id));
+  res.sendStatus(204);
+});
+router.get("/api/payments/methods", auth, async (_req, res) => {
+  res.json([
+    { id: 1, brand: "visa", last4: "4421", expiry: "12/25", isDefault: true },
+    { id: 2, brand: "mastercard", last4: "8892", expiry: "09/24", isDefault: false },
+    { id: 3, brand: "momo", provider: "MTN", phone: "055XXXXX21", isDefault: false }
+  ]);
+});
+router.post("/api/rewards/redeem", auth, async (req, res) => {
+  const { points } = req.body;
+  if (!points || points <= 0) return res.status(400).json({ error: "Points required" });
+  const user = await storage.getUserById(req.user.id);
+  if (!user || user.points < points) return res.status(400).json({ error: "Insufficient points" });
+  res.json({ success: true, message: `Successfully redeemed ${points} points for a GH\u20B510 Coupon!` });
+});
 var routes_default = router;
 
 // server/index.ts
@@ -108527,7 +108622,10 @@ if (process.env.NODE_ENV === "production" || process.env.RENDER) {
   const distPath = import_path3.default.resolve(process.cwd(), "dist");
   app.use(import_express2.default.static(distPath));
   app.use((req, res, next) => {
-    if (req.method === "GET" && !req.path.startsWith("/api") && !req.path.includes(".")) {
+    if (req.method === "GET" && !req.path.startsWith("/api")) {
+      if (req.path.includes(".")) {
+        return res.status(404).send("Not Found");
+      }
       return res.sendFile(import_path3.default.resolve(distPath, "index.html"));
     }
     next();
@@ -108564,6 +108662,57 @@ async function seedSuperAdmin() {
   });
   console.log("Super Admin seeded: admin@mrwu.com / mrwu-admin-2025");
 }
+async function initializeDatabase() {
+  console.log("### DB_CHECKPOINT: Running self-healing migrations...");
+  try {
+    const sqlite2 = db.session.client;
+    const tableInfo = sqlite2.prepare("PRAGMA table_info(users)").all();
+    const columns = tableInfo.map((c) => c.name);
+    if (!columns.includes("points")) {
+      console.log("### DB_CHECKPOINT: Adding 'points' column to users...");
+      sqlite2.prepare("ALTER TABLE users ADD COLUMN points INTEGER DEFAULT 0").run();
+    }
+    if (!columns.includes("allergies")) {
+      console.log("### DB_CHECKPOINT: Adding 'allergies' column to users...");
+      sqlite2.prepare("ALTER TABLE users ADD COLUMN allergies TEXT").run();
+    }
+    const favoritesTable = sqlite2.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='favorites'").get();
+    if (!favoritesTable) {
+      console.log("### DB_CHECKPOINT: Creating 'favorites' table...");
+      sqlite2.prepare(`
+        CREATE TABLE favorites (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL REFERENCES users(id),
+          menu_item_id INTEGER NOT NULL REFERENCES menu_items(id),
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `).run();
+    }
+    console.log("### DB_CHECKPOINT: Database structure verified");
+  } catch (err) {
+    console.error("### DB_ERROR: Self-healing migration failed:", err);
+  }
+}
+async function seedStaffAccounts() {
+  const staff = [
+    { email: "chef@mrwu.com", name: "Chef Wu", role: "kitchen" },
+    { email: "rider@mrwu.com", name: "Rider Wu", role: "rider" }
+  ];
+  const passwordHash = await bcryptjs_default.hash("mrwu-staff-2025", 10);
+  for (const s of staff) {
+    const [existing] = await db.select().from(users).where(eq(users.email, s.email));
+    if (!existing) {
+      await db.insert(users).values({
+        email: s.email,
+        passwordHash,
+        name: s.name,
+        role: s.role,
+        createdAt: /* @__PURE__ */ new Date()
+      });
+      console.log(`Staff seeded: ${s.email}`);
+    }
+  }
+}
 async function seedMenuItems() {
   const existing = await db.select().from(menuItems);
   if (existing.length > 0) return;
@@ -108592,7 +108741,9 @@ httpServer.listen(PORT, "0.0.0.0", async () => {
       console.error("### AI_CHECK: No OPENROUTER_API_KEY detected in environment!");
     }
     console.log("### SERVER_CHECKPOINT: Running initialization seeds...");
+    await initializeDatabase();
     await seedSuperAdmin();
+    await seedStaffAccounts();
     await seedMenuItems();
     console.log("### SERVER_CHECKPOINT: Startup complete");
   } catch (err) {

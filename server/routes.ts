@@ -395,16 +395,24 @@ router.patch("/rider/orders/:id/status", auth, requireRole("rider"), async (req:
 router.get("/ai/recommendations", aiLimiter, async (req: AuthRequest, res) => {
   try {
     const menuItems = await storage.getMenuItems();
-    const recentOrders = req.headers.authorization
-      ? await (async () => {
-          const token = req.headers.authorization?.split(" ")[1];
-          if (!token) return [];
-          try {
-            const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
-            return await storage.getOrdersByUser(decoded.id);
-          } catch { return []; }
-        })()
-      : [];
+    const { recentOrders, allergies } = await (async () => {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) return { recentOrders: [], allergies: null };
+      
+      const token = authHeader.split(" ")[1];
+      if (!token) return { recentOrders: [], allergies: null };
+
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback-secret") as { id: number };
+        const [orders, user] = await Promise.all([
+          storage.getOrdersByUser(decoded.id),
+          storage.getUserById(decoded.id)
+        ]);
+        return { recentOrders: orders, allergies: user?.allergies };
+      } catch {
+        return { recentOrders: [], allergies: null };
+      }
+    })();
 
     const hour = new Date().getHours();
     const timeOfDay =
@@ -418,7 +426,7 @@ router.get("/ai/recommendations", aiLimiter, async (req: AuthRequest, res) => {
       tags: m.tags ? JSON.parse(m.tags) : [],
     }));
 
-    const recs = await getRecommendations(simplified as any, recentOrders, timeOfDay);
+    const recs = await getRecommendations(simplified as any, recentOrders, timeOfDay, allergies);
     res.json(recs);
   } catch (err) {
     console.error("AI recommendations error:", err);

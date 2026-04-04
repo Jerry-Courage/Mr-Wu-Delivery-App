@@ -118,7 +118,8 @@ export interface RecommendationItem {
 export async function getRecommendations(
   menuItems: { id: number; name: string; category: string; price: string; tags: string[] | null }[],
   recentOrders: { items: { name: string }[] }[],
-  timeOfDay: "morning" | "afternoon" | "evening" | "night"
+  timeOfDay: "morning" | "afternoon" | "evening" | "night",
+  allergies?: string | null
 ): Promise<RecommendationItem[]> {
   const menuText = menuItems
     .map(i => `ID:${i.id} "${i.name}" (${i.category}, $${i.price}${i.tags?.length ? ", " + i.tags.join("/") : ""})`)
@@ -132,6 +133,7 @@ export async function getRecommendations(
 ${menuText}
 Orders: ${historyText}
 Time: ${timeOfDay}
+Allergies/Preferences: ${allergies || "None"}. DO NOT recommend any dishes containing these allergens or violating these preferences.
 Respond with 4 best JSON recommendations only: [{"id":"1","name":"Item","reason":"reason","confidence":0.95}]`;
 
   const response = await chat([
