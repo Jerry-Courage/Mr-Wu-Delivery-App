@@ -161,6 +161,12 @@ console.log("### SERVER_CHECKPOINT: Attempting to listen on PORT:", PORT);
 httpServer.listen(PORT, "0.0.0.0", async () => {
   console.log(`### SERVER_SUCCESS: Backend running on 0.0.0.0:${PORT}`);
   try {
+    const aiKey = process.env.OPENROUTER_API_KEY;
+    if (aiKey) {
+      console.log(`### AI_CHECK: Key detected (Ends with ...${aiKey.slice(-4)})`);
+    } else {
+      console.error("### AI_CHECK: No OPENROUTER_API_KEY detected in environment!");
+    }
     console.log("### SERVER_CHECKPOINT: Running initialization seeds...");
     await seedSuperAdmin();
     await seedMenuItems();
