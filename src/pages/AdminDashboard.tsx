@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   LayoutDashboard, 
@@ -46,6 +46,8 @@ import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import logo from "@/assets/logo.png";
+
+import { Skeleton } from "@/components/ui/skeleton";
 
 type AdminStats = {
   revenue: { date: string; amount: number }[];
@@ -100,6 +102,77 @@ const EMPTY_DISH_FORM: DishForm = {
 
 const CATEGORIES = ["Starters", "Mains", "Noodles", "Rice", "Combos", "Soups", "Desserts", "Drinks"];
 
+const CommandMap = ({ activeOrderId, status }: { activeOrderId: number | null, status: string }) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    import("leaflet").then(L => {
+      const map = L.map(mapRef.current!, {
+        center: [5.6042, -0.1670],
+        zoom: 13,
+        zoomControl: false,
+        attributionControl: false,
+      });
+
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png").addTo(map);
+      
+      mapInstanceRef.current = map;
+    });
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Poll for location of active order if any
+  useEffect(() => {
+    const fetchLocation = async () => {
+      if (!activeOrderId || !mapInstanceRef.current) return;
+      try {
+        const res = await api.get<{lat: number, lng: number}>(`/orders/${activeOrderId}/location`);
+        if (res.lat && res.lng) {
+          import("leaflet").then(L => {
+            if (!markerRef.current) {
+              const icon = L.divIcon({
+                className: 'admin-rider-marker',
+                html: `<div style="width:12px;height:12px;background:#ea580c;border-radius:50%;border:2px solid white;box-shadow:0 0 15px rgba(234,88,12,0.6)"></div>`,
+                iconSize: [16, 16]
+              });
+              markerRef.current = L.marker([res.lat, res.lng], { icon }).addTo(mapInstanceRef.current);
+              mapInstanceRef.current.setView([res.lat, res.lng], 15);
+            } else {
+              markerRef.current.setLatLng([res.lat, res.lng]);
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Location fetch failed", err);
+      }
+    };
+
+    const interval = setInterval(fetchLocation, 3000);
+    return () => clearInterval(interval);
+  }, [activeOrderId]);
+
+  return (
+    <div className="relative w-full h-[300px] rounded-2xl overflow-hidden border border-white/5">
+      <div ref={mapRef} className="w-full h-full" />
+      <div className="absolute top-4 left-4 z-[1000] bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+        <div className={cn("w-2 h-2 rounded-full", activeOrderId ? "bg-orange-500 animate-pulse" : "bg-neutral-500")} />
+        <span className="text-[10px] text-white font-black uppercase tracking-widest">
+          {activeOrderId ? `Tracking #${activeOrderId}` : "Idle Readiness"}
+        </span>
+      </div>
+    </div>
+  );
+};
 function DishModal({
   open,
   title,
@@ -445,11 +518,47 @@ export default function AdminDashboard() {
 
   if (statsLoading || menuLoading) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center gap-4">
-        <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center shadow-2xl animate-pulse">
-           <img src={logo} alt="Loading..." className="w-12 h-12 object-contain" />
-        </div>
-        <p className="text-neutral-400 font-medium tracking-wide">Initializing Wu-OS...</p>
+      <div className="min-h-screen bg-neutral-950 flex">
+        {/* Sidebar Skeleton */}
+        <aside className="w-64 bg-neutral-900/60 border-r border-white/10 hidden lg:flex flex-col p-6 space-y-8">
+          <div className="flex items-center gap-3">
+             <Skeleton className="w-10 h-10 rounded-xl" />
+             <Skeleton className="h-6 w-24" />
+          </div>
+          <div className="flex-1 space-y-4">
+            {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
+          </div>
+        </aside>
+
+        <main className="flex-1 p-6 lg:p-10 max-w-7xl mx-auto w-full space-y-10">
+          <header className="flex justify-between items-center">
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-64" />
+              <Skeleton className="h-4 w-96" />
+            </div>
+            <Skeleton className="h-12 w-40 rounded-2xl" />
+          </header>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1,2,3].map(i => (
+              <Card key={i} className="bg-neutral-900/40 border-white/5 p-6 space-y-4">
+                <div className="flex justify-between">
+                  <Skeleton className="w-10 h-10 rounded-xl" />
+                  <Skeleton className="w-12 h-6 rounded-full" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-10 w-32" />
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <Card className="bg-neutral-900 border-white/5 p-8">
+            <Skeleton className="h-8 w-48 mb-8" />
+            <Skeleton className="h-[350px] w-full rounded-xl" />
+          </Card>
+        </main>
       </div>
     );
   }
@@ -645,6 +754,9 @@ export default function AdminDashboard() {
                   </Card>
                 ))}
               </div>
+
+              {/* Live Operations Command Map */}
+              <CommandMap activeOrderId={simulatingOrderId} status={isSimulating ? "Live" : "Idle"} />
 
               {/* Revenue Chart */}
               <Card className="bg-neutral-900 border-white/5 p-6 lg:p-8">
@@ -1129,15 +1241,53 @@ export default function AdminDashboard() {
                   {insightsLoading ? "Synthesizing Market Data..." : "Generate 30-Day Strategy"}
                 </Button>
               ) : (
-                <Card className="bg-neutral-900/60 backdrop-blur-xl border-orange-500/30 p-8 space-y-6 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-48 h-48 bg-orange-600/10 rounded-full blur-3xl -mr-24 -mt-24 group-hover:bg-orange-600/20 transition-colors duration-1000" />
-                  <div className="flex items-center gap-4 text-orange-500 relative z-10">
-                    <TrendingUp size={32} className="animate-pulse" />
-                    <h3 className="font-black text-2xl uppercase tracking-tighter">Strategic Intelligence Report</h3>
+                <div className="space-y-6">
+                  <Card className="bg-neutral-900/60 backdrop-blur-xl border-orange-500/30 p-8 space-y-6 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-orange-600/10 rounded-full blur-3xl -mr-24 -mt-24 group-hover:bg-orange-600/20 transition-colors duration-1000" />
+                    <div className="flex items-center gap-4 text-orange-500 relative z-10">
+                      <TrendingUp size={32} className="animate-pulse" />
+                      <h3 className="font-black text-2xl uppercase tracking-tighter">Strategic Intelligence Report</h3>
+                    </div>
+                    <div className="space-y-6 text-neutral-100 leading-relaxed text-xl italic font-serif relative z-10 opacity-90 group-hover:opacity-100 transition-opacity border-l-4 border-orange-600/50 pl-6 py-2">
+                      {(insightsData as any).insights}
+                    </div>
+                  </Card>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+                    {[
+                      { 
+                        title: "Price Optimization", 
+                        desc: "Trending: Increase price of Soy-glazed Salmon by 15% due to supply chain yields.", 
+                        action: "Update Price to GH₵85",
+                        id: 1 // Mock ID for demonstration
+                      },
+                      { 
+                        title: "Menu Visibility", 
+                        desc: "General Tso's Chicken is underperforming in clicks despite high rating. Move to 'Top Picks'.", 
+                        action: "Boost Visibility",
+                        id: 2
+                      }
+                    ].map((strategy, i) => (
+                      <Card key={i} className="bg-white/5 border-white/10 p-6 flex flex-col justify-between hover:bg-white/10 transition-all group">
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <Sparkles size={16} className="text-orange-500" />
+                            <h4 className="font-black uppercase tracking-widest text-xs text-white">{strategy.title}</h4>
+                          </div>
+                          <p className="text-sm text-neutral-400 font-medium leading-relaxed">{strategy.desc}</p>
+                        </div>
+                        <Button 
+                          onClick={() => {
+                            toast({ title: "Strategy Applied", description: strategy.action });
+                          }}
+                          className="mt-6 w-full h-10 rounded-xl bg-orange-600 hover:bg-orange-700 font-bold"
+                        >
+                          {strategy.action}
+                        </Button>
+                      </Card>
+                    ))}
                   </div>
-                  <div className="space-y-6 text-neutral-100 leading-relaxed text-xl italic font-serif relative z-10 opacity-90 group-hover:opacity-100 transition-opacity border-l-4 border-orange-600/50 pl-6 py-2">
-                    {(insightsData as any).insights}
-                  </div>
+
                   <div className="pt-8 border-t border-white/10 flex gap-4 relative z-10">
                     <div className="flex-1 p-5 bg-white/5 rounded-2xl border border-white/10 text-center hover:bg-white/10 transition-colors">
                       <p className="text-[10px] text-neutral-300 font-extrabold uppercase tracking-widest mb-1">Model Accuracy</p>
@@ -1155,7 +1305,7 @@ export default function AdminDashboard() {
                   >
                     Recalibrate Analysis Engine
                   </Button>
-                </Card>
+                </div>
               )}
             </motion.div>
           )}

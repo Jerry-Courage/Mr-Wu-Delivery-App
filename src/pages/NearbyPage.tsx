@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import "leaflet/dist/leaflet.css";
 
 const locations = [
@@ -25,9 +26,18 @@ const NearbyPage = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const [pickupLocation, setPickupLocation] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    // Artificial delay to show kinetic skeletons
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (isLoading || !mapRef.current || mapInstanceRef.current) return;
 
     import("leaflet").then(L => {
       delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -38,15 +48,15 @@ const NearbyPage = () => {
       });
 
       const map = L.map(mapRef.current!, {
-        center: [5.6042, -0.1670], // Accra slightly adjusted
+        center: [5.6042, -0.1670], 
         zoom: 12,
-        zoomControl: false, // Custom positioning or styling
+        zoomControl: false, 
         scrollWheelZoom: false,
         attributionControl: false,
       });
 
       L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-        maxZoom: 20, // Increased for deep street detail
+        maxZoom: 20, 
       }).addTo(map);
 
       L.control.zoom({
@@ -89,20 +99,10 @@ const NearbyPage = () => {
         .custom-popup .leaflet-popup-tip {
           background: #1a1a1a;
         }
-        .leaflet-control-zoom {
-          border: none !important;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
-        }
-        .leaflet-control-zoom a {
-          background: #1a1a1a !important;
-          color: #ef4444 !important;
-          border-color: #333 !important;
-        }
       `;
       document.head.appendChild(style);
 
       // User location marker logic
-      let userMarker: any = null;
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
@@ -113,11 +113,10 @@ const NearbyPage = () => {
               iconSize: [16, 16],
               iconAnchor: [8, 8]
             });
-            userMarker = L.marker([latitude, longitude], { icon: userIcon })
+            L.marker([latitude, longitude], { icon: userIcon })
               .addTo(map)
               .bindPopup("<b>You Are Here</b>", { className: 'custom-popup' });
             
-            // Auto center on success
             map.setView([latitude, longitude], 15);
           },
           (err) => console.log("Geolocation error:", err),
@@ -127,7 +126,6 @@ const NearbyPage = () => {
 
       locations.forEach(loc => {
         const isFastest = loc.badge === "⚡FASTEST";
-        
         const customIcon = L.divIcon({
           className: `custom-div-icon ${isFastest ? 'pulsing-marker' : ''}`,
           html: `<div style="width:12px;height:12px;background:#ef4444;border-radius:50%;border:2px solid white"></div>`,
@@ -139,11 +137,6 @@ const NearbyPage = () => {
           <div style="font-family:'Outfit',sans-serif;min-width:160px;padding:4px">
             <strong style="display:block;margin-bottom:4px;font-size:14px">${loc.name}</strong>
             <span style="font-size:11px;color:#999">${loc.address}</span>
-            <div style="margin-top:8px;font-size:11px;display:flex;align-items:center;gap:8px">
-              <span style="color:#ef4444;font-weight:bold">⭐ ${loc.rating}</span>
-              <span style="color:#999">🕐 ${loc.time}</span>
-            </div>
-            ${isFastest ? '<div style="margin-top:8px;font-size:10px;background:rgba(239,68,68,0.1);color:#ef4444;padding:4px 8px;border-radius:4px;font-weight:bold;text-align:center">⚡ FASTEST KITCHEN</div>' : ''}
           </div>
         `;
         L.marker([loc.lat, loc.lng], { icon: customIcon })
@@ -153,7 +146,9 @@ const NearbyPage = () => {
 
       mapInstanceRef.current = map;
     });
+  }, [isLoading]);
 
+  useEffect(() => {
     return () => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
@@ -169,6 +164,48 @@ const NearbyPage = () => {
       });
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="pb-4 relative bg-black min-h-screen">
+        <AppHeader title="Find Mr Wu's" />
+        <div className="md:grid md:grid-cols-2 md:gap-4 md:px-4 md:mt-3">
+          <div className="px-4 md:px-0">
+            <Skeleton className="w-full h-[320px] rounded-[2rem]" />
+          </div>
+          <div className="px-4 md:px-0 mt-4 md:mt-0 space-y-4">
+            <div className="flex gap-2">
+              <Skeleton className="h-12 flex-1 rounded-xl" />
+              <Skeleton className="h-12 w-12 rounded-xl" />
+            </div>
+            <Skeleton className="h-20 w-full rounded-xl" />
+            <div className="pt-4 space-y-6">
+              <div className="flex justify-between items-center">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+              {[1, 2, 3].map(i => (
+                <div key={i} className="space-y-3">
+                  <div className="flex justify-between">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-3 w-56" />
+                    </div>
+                    <Skeleton className="h-10 w-12" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-8 w-20 rounded-xl" />
+                    <Skeleton className="h-8 w-20 rounded-xl" />
+                    <Skeleton className="h-8 w-20 rounded-xl" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-4 relative">

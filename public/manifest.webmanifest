@@ -1,0 +1,22 @@
+{
+  "name": "Mr. Wu's Premium Delivery",
+  "short_name": "Mr. Wu's",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#ea580c",
+  "description": "Authentic flavors, kinetic luxury, and lightning-fast delivery.",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/placeholder.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

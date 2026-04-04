@@ -7,6 +7,8 @@ import { useCart } from "@/context/CartContext";
 import { api } from "@/lib/api";
 import type { MenuItem as CartMenuItem } from "@/data/menuData";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 interface DBMenuItem {
   id: number;
   name: string;
@@ -59,14 +61,37 @@ const MenuPage = () => {
     return (
       <div className="pb-4">
         <AppHeader title="Menu - Midtown East" showBack />
+        
+        {/* Categories Skeleton */}
+        <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
+          {[1, 2, 3, 4, 5].map(i => (
+            <Skeleton key={i} className="h-8 w-20 rounded-full flex-shrink-0" />
+          ))}
+        </div>
+
+        {/* AI Suggestion Skeleton */}
+        <div className="mx-4 mb-6">
+          <Skeleton className="h-4 w-32 mb-2" />
+          <div className="w-full flex items-center gap-3 bg-card border border-border rounded-xl p-3">
+            <Skeleton className="w-16 h-16 rounded-lg" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-3 w-full" />
+            </div>
+          </div>
+        </div>
+
         <div className="px-4 mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-          {[1,2,3,4,5,6].map(i => (
+          {[1, 2, 3, 4, 5, 6].map(i => (
             <div key={i} className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
-              <div className="w-20 h-20 rounded-lg bg-muted animate-pulse flex-shrink-0" />
+              <Skeleton className="w-20 h-20 rounded-lg flex-shrink-0" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
-                <div className="h-3 bg-muted animate-pulse rounded w-full" />
-                <div className="h-3 bg-muted animate-pulse rounded w-1/2" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-full" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-3 w-12" />
+                  <Skeleton className="h-3 w-12" />
+                </div>
               </div>
             </div>
           ))}
