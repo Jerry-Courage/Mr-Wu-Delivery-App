@@ -22,6 +22,8 @@ import ManagementPage from "./pages/ManagementPage";
 import RiderPage from "./pages/RiderPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import AdminDashboard from "./pages/AdminDashboard";
+import FavoritesPage from "./pages/FavoritesPage";
+import PaymentMethodsPage from "./pages/PaymentMethodsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -99,6 +101,8 @@ function AppRoutes() {
       <Route path="/tracking/:id" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><TrackingPage /></AppShell></ProtectedRoute>} />
       <Route path="/nearby" element={<ProtectedRoute allowedRoles={["customer", "kitchen", "rider"]}><AppShell><NearbyPage /></AppShell></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><ProfilePage /></AppShell></ProtectedRoute>} />
+      <Route path="/favorites" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><FavoritesPage /></AppShell></ProtectedRoute>} />
+      <Route path="/payment-methods" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><PaymentMethodsPage /></AppShell></ProtectedRoute>} />
       <Route path="/help" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><HelpPage /></AppShell></ProtectedRoute>} />
       <Route path="/search" element={<ProtectedRoute allowedRoles={customerOnly}><AppShell><SearchPage /></AppShell></ProtectedRoute>} />
       

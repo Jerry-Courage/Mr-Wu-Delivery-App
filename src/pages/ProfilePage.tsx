@@ -4,24 +4,41 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-type ProfileField = { name: string; phone: string; address: string };
+type ProfileField = { name: string; phone: string; address: string; allergies: string };
 
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { isDark, toggle } = useTheme();
   const { user, logout, updateUser } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [editForm, setEditForm] = useState<ProfileField>({ name: "", phone: "", address: "" });
+  const [editForm, setEditForm] = useState<ProfileField>({ name: "", phone: "", address: "", allergies: "" });
+
+  const redeemMutation = useMutation({
+    mutationFn: async (points: number) => {
+      return api.post("/api/rewards/redeem", { points });
+    },
+    onSuccess: (data: any) => {
+      toast({ title: "Rewards Redeemed!", description: data.message });
+      // In a real app, invalidate user query here
+    },
+    onError: (err: any) => {
+      toast({ title: "Redemption Failed", description: err.message, variant: "destructive" });
+    }
+  });
 
   const openEdit = () => {
     setEditForm({
       name: user?.name || "",
       phone: user?.phone || "",
       address: user?.address || "",
+      allergies: user?.allergies || "",
     });
     setEditOpen(true);
   };
@@ -33,6 +50,7 @@ const ProfilePage = () => {
         name: editForm.name.trim() || undefined,
         phone: editForm.phone.trim() || undefined,
         address: editForm.address.trim() || undefined,
+        allergies: editForm.allergies.trim() || undefined,
       });
       toast({ title: "Profile updated" });
       setEditOpen(false);
@@ -50,9 +68,9 @@ const ProfilePage = () => {
 
   const accountItems = [
     { icon: MapPin, label: "Saved Addresses", desc: user?.address || "Add a delivery address", action: openEdit },
-    { icon: CreditCard, label: "Payment Methods", desc: "Visa ending in 4421", action: () => {} },
-    { icon: Heart, label: "Favorites", desc: "12 dishes saved", action: () => {} },
-    { icon: AlertTriangle, label: "Allergies & Preferences", desc: "Peanuts, Shellfish, Glu...", badge: "Action Required", action: () => {} },
+    { icon: CreditCard, label: "Payment Methods", desc: "Visa, Mastercard, Momo", action: () => navigate("/payment-methods") },
+    { icon: Heart, label: "Favorites", desc: "Your top dishes", action: () => navigate("/favorites") },
+    { icon: AlertTriangle, label: "Allergies & Preferences", desc: user?.allergies || "None set", badge: !user?.allergies ? "Action Required" : undefined, action: openEdit },
   ];
 
   const settingsItems = [
@@ -132,6 +150,16 @@ const ProfilePage = () => {
                   className="w-full border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors resize-none"
                 />
               </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Allergies & Preferences</label>
+                <textarea
+                  value={editForm.allergies}
+                  onChange={e => setEditForm(f => ({ ...f, allergies: e.target.value }))}
+                  placeholder="e.g. No Peanuts, Gluten Free, Extra Spicy"
+                  rows={2}
+                  className="w-full border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors resize-none"
+                />
+              </div>
             </div>
 
             <div className="flex gap-3 mt-6">
@@ -185,18 +213,29 @@ const ProfilePage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase opacity-80 font-bold tracking-wider">Total Rewards</p>
-                <p className="text-2xl font-black">2,450 pts</p>
+                <p className="text-2xl font-black">{user.points?.toLocaleString() || 0} pts</p>
               </div>
               <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
                 <Gift className="w-6 h-6 text-white" />
               </div>
             </div>
             <div className="mt-3 h-2 bg-white/20 rounded-full overflow-hidden">
-              <div className="h-full w-4/5 bg-green-400 rounded-full" />
+              <div 
+                className="h-full bg-green-400 rounded-full transition-all duration-1000" 
+                style={{ width: `${Math.min(((user.points || 0) / 3000) * 100, 100)}%` }}
+              />
             </div>
             <div className="flex items-center justify-between mt-2 text-xs font-medium">
-              <span className="opacity-90">550 pts until Platinum</span>
-              <button className="text-white underline underline-offset-2 font-bold">Redeem</button>
+              <span className="opacity-90">
+                {(user.points || 0) >= 3000 ? "Platinum Member Status" : `${(3000 - (user.points || 0)).toLocaleString()} pts until Platinum`}
+              </span>
+              <button 
+                onClick={() => (user.points || 0) >= 500 && redeemMutation.mutate(500)}
+                className="text-white underline underline-offset-2 font-bold disabled:opacity-50"
+                disabled={redeemMutation.isPending || (user.points || 0) < 500}
+              >
+                {redeemMutation.isPending ? "Redeeming..." : "Redeem"}
+              </button>
             </div>
           </div>
 

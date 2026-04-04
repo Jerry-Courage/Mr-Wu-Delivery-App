@@ -1,8 +1,8 @@
 import { eq, desc, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import {
-  users, orders, orderItems, menuItems,
-  User, Order, OrderItem, MenuItem, roles
+  users, orders, orderItems, menuItems, favorites,
+  User, Order, OrderItem, MenuItem, Favorite, roles
 } from "../shared/schema";
 import bcrypt from "bcryptjs";
 
@@ -65,8 +65,12 @@ export interface IStorage {
   assignRider(orderId: number, riderId: number): Promise<Order>;
   updateRiderLocation(orderId: number, lat: number, lng: number): Promise<Order>;
   updateCustomerLocation(orderId: number, lat: number, lng: number): Promise<Order>;
+  updateUserProfile(id: number, data: { name?: string; phone?: string; address?: string; allergies?: string }): Promise<User | null>;
 
-  updateUserProfile(id: number, data: { name?: string; phone?: string; address?: string }): Promise<User | null>;
+  // Favorites
+  getFavorites(userId: number): Promise<MenuItem[]>;
+  addFavorite(userId: number, menuItemId: number): Promise<void>;
+  removeFavorite(userId: number, menuItemId: number): Promise<void>;
 
   // Admin Stats
   getAdminStats(days: number): Promise<{
@@ -92,6 +96,7 @@ export class Storage implements IStorage {
       phone: data.phone,
       role: data.role ?? "customer",
       address: data.address,
+      points: 0,
       createdAt: new Date(),
     }).returning();
     return user;
@@ -266,6 +271,15 @@ export class Storage implements IStorage {
       .set({ status, updatedAt: new Date() })
       .where(eq(orders.id, id))
       .returning();
+
+    // Award points on delivery: 10 pts per 1 GH₵
+    if (status === "delivered" && order) {
+      const pointsEarned = Math.floor(parseFloat(order.total) * 10);
+      await db.update(users)
+        .set({ points: sql`${users.points} + ${pointsEarned}` })
+        .where(eq(users.id, order.userId));
+    }
+
     return order;
   }
 
@@ -285,16 +299,41 @@ export class Storage implements IStorage {
     return item;
   }
 
-  async updateUserProfile(id: number, data: { name?: string; phone?: string; address?: string }): Promise<User | null> {
+  async updateUserProfile(id: number, data: { name?: string; phone?: string; address?: string; allergies?: string }): Promise<User | null> {
     const updates: Partial<typeof users.$inferInsert> = {};
     if (data.name !== undefined) updates.name = data.name;
     if (data.phone !== undefined) updates.phone = data.phone;
     if (data.address !== undefined) updates.address = data.address;
+    if (data.allergies !== undefined) updates.allergies = data.allergies;
     if (Object.keys(updates).length === 0) {
       return this.getUserById(id);
     }
     const [user] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
     return user ?? null;
+  }
+
+  // Favorites
+  async getFavorites(userId: number): Promise<MenuItem[]> {
+    const userFavs = await db.select().from(favorites).where(eq(favorites.userId, userId));
+    if (userFavs.length === 0) return [];
+    
+    const itemIds = userFavs.map(f => f.menuItemId);
+    return db.select().from(menuItems).where(sql`${menuItems.id} IN (${sql.join(itemIds, sql`, `)})`);
+  }
+
+  async addFavorite(userId: number, menuItemId: number): Promise<void> {
+    const existing = await db.select().from(favorites).where(
+      and(eq(favorites.userId, userId), eq(favorites.menuItemId, menuItemId))
+    );
+    if (existing.length === 0) {
+      await db.insert(favorites).values({ userId, menuItemId });
+    }
+  }
+
+  async removeFavorite(userId: number, menuItemId: number): Promise<void> {
+    await db.delete(favorites).where(
+      and(eq(favorites.userId, userId), eq(favorites.menuItemId, menuItemId))
+    );
   }
 
   async assignRider(orderId: number, riderId: number): Promise<Order> {

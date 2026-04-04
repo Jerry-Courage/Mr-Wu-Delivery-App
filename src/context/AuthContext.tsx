@@ -8,6 +8,8 @@ export interface AuthUser {
   role: "customer" | "kitchen" | "rider" | "admin";
   phone?: string | null;
   address?: string | null;
+  points?: number | null;
+  allergies?: string | null;
 }
 
 interface AuthContextType {
@@ -17,7 +19,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<AuthUser>;
   register: (data: { email: string; password: string; name: string; phone?: string; role?: string; address?: string; adminSecret?: string }) => Promise<AuthUser>;
   logout: () => void;
-  updateUser: (data: { name?: string; phone?: string; address?: string }) => Promise<AuthUser>;
+  updateUser: (data: { name?: string; phone?: string; address?: string; allergies?: string }) => Promise<AuthUser>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -70,7 +72,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
   };
 
-  const updateUser = async (data: { name?: string; phone?: string; address?: string }) => {
+  const updateUser = async (data: { name?: string; phone?: string; address?: string; allergies?: string }) => {
     const updated = await api.patch<AuthUser>("/auth/profile", data);
     setUser(updated);
     return updated;

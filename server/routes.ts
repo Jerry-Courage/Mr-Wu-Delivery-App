@@ -119,14 +119,32 @@ router.post("/auth/login", async (req, res) => {
 router.get("/auth/me", auth, async (req: AuthRequest, res) => {
   const user = await storage.getUserById(req.user!.id);
   if (!user) return res.status(404).json({ error: "User not found" });
-  res.json({ id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone, address: user.address });
+  res.json({ 
+    id: user.id, 
+    email: user.email, 
+    name: user.name, 
+    role: user.role, 
+    phone: user.phone, 
+    address: user.address,
+    points: user.points,
+    allergies: user.allergies
+  });
 });
 
 router.patch("/auth/profile", auth, async (req: AuthRequest, res) => {
-  const { name, phone, address } = req.body;
-  const user = await storage.updateUserProfile(req.user!.id, { name, phone, address });
+  const { name, phone, address, allergies } = req.body;
+  const user = await storage.updateUserProfile(req.user!.id, { name, phone, address, allergies });
   if (!user) return res.status(404).json({ error: "User not found" });
-  res.json({ id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone, address: user.address });
+  res.json({ 
+    id: user.id, 
+    email: user.email, 
+    name: user.name, 
+    role: user.role, 
+    phone: user.phone, 
+    address: user.address,
+    points: user.points,
+    allergies: user.allergies
+  });
 });
 
 // ─── Menu ────────────────────────────────────────────────────────────────────
@@ -605,6 +623,47 @@ router.post("/support/email", auth, async (req: AuthRequest, res) => {
   console.log(`### SUPPORT TICKET from ${req.user!.email}: [${subject}] ${message}`);
   
   res.json({ success: true, message: "Support ticket received. We'll get back to you soon!" });
+});
+
+// ─── Favorites ──────────────────────────────────────────────────────────────
+
+router.get("/api/favorites", auth, async (req: AuthRequest, res) => {
+  const favs = await storage.getFavorites(req.user!.id);
+  res.json(favs);
+});
+
+router.post("/api/favorites/:id", auth, async (req: AuthRequest, res) => {
+  await storage.addFavorite(req.user!.id, Number(req.params.id));
+  res.sendStatus(201);
+});
+
+router.delete("/api/favorites/:id", auth, async (req: AuthRequest, res) => {
+  await storage.removeFavorite(req.user!.id, Number(req.params.id));
+  res.sendStatus(204);
+});
+
+// ─── Payment Methods (Mock) ──────────────────────────────────────────────────
+
+router.get("/api/payments/methods", auth, async (_req, res) => {
+  // Mock data for regional clarity
+  res.json([
+    { id: 1, brand: "visa", last4: "4421", expiry: "12/25", isDefault: true },
+    { id: 2, brand: "mastercard", last4: "8892", expiry: "09/24", isDefault: false },
+    { id: 3, brand: "momo", provider: "MTN", phone: "055XXXXX21", isDefault: false },
+  ]);
+});
+
+// ─── Rewards ─────────────────────────────────────────────────────────────────
+
+router.post("/api/rewards/redeem", auth, async (req: AuthRequest, res) => {
+  const { points } = req.body;
+  if (!points || points <= 0) return res.status(400).json({ error: "Points required" });
+  
+  const user = await storage.getUserById(req.user!.id);
+  if (!user || user.points < points) return res.status(400).json({ error: "Insufficient points" });
+  
+  // Actually deduct points in a real app, here we just mock the success
+  res.json({ success: true, message: `Successfully redeemed ${points} points for a GH₵10 Coupon!` });
 });
 
 export default router;

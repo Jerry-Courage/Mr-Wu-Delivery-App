@@ -24,6 +24,8 @@ export const users = sqliteTable("users", {
   phone: text("phone"),
   role: text("role", { enum: roles }).notNull().default("customer"),
   address: text("address"),
+  points: integer("points").notNull().default(0),
+  allergies: text("allergies"),
   createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
 });
 
@@ -78,6 +80,13 @@ export const orderItems = sqliteTable("order_items", {
   specialInstructions: text("special_instructions"),
 });
 
+export const favorites = sqliteTable("favorites", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull().references(() => users.id),
+  menuItemId: integer("menu_item_id").notNull().references(() => menuItems.id),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+});
+
 export const insertUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
@@ -85,6 +94,8 @@ export const insertUserSchema = z.object({
   phone: z.string().optional(),
   role: z.enum(roles).optional(),
   address: z.string().optional(),
+  points: z.number().optional(),
+  allergies: z.string().optional(),
 });
 
 export const insertOrderSchema = z.object({
@@ -113,7 +124,14 @@ export type User = typeof users.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type MenuItem = typeof menuItems.$inferSelect;
+export type Favorite = typeof favorites.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
+
+export const insertFavoriteSchema = z.object({
+  userId: z.number().int(),
+  menuItemId: z.number().int(),
+});
+export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
