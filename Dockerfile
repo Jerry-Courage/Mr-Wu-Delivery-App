@@ -14,6 +14,7 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
+# This will build both the frontend (via vite) and the server (via esbuild)
 RUN npm run build
 
 # Runtime stage
@@ -28,28 +29,26 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-COPY package*.json ./
-RUN npm install --omit=dev
-
-# Copy build artifacts and server files
+# Copy only the bundled output and necessary files
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/server ./server
-COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/dist-server ./dist-server
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/tsconfig*.json ./
-COPY --from=builder /app/public ./public
+
+# Install only production dependencies (better-sqlite3 must be installed here)
+RUN npm install --omit=dev --no-audit --no-fund
+
+# Initial database
 COPY --from=builder /app/sqlite_v2.db ./sqlite_v2.db
+COPY --from=builder /app/public/assets ./public/assets
 
 # Ensure uploads directory exists
 RUN mkdir -p public/uploads
 
 # Set environment to production
 ENV NODE_ENV=production
-# Primary port variable for cloud platforms
 ENV PORT=3001
-ENV SERVER_PORT=3001
 
 EXPOSE 3001
 
-# Start the server using tsx
-CMD ["npx", "tsx", "server/index.ts"]
+# Start the server using node directly (much faster than tsx)
+CMD ["node", "dist-server/index.js"]
