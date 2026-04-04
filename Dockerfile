@@ -14,7 +14,7 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
-# This will build both the frontend (via vite) and the server (via tsc)
+# This will build both the frontend (via vite) and the server (via esbuild)
 RUN npm run build
 
 # Runtime stage
@@ -29,14 +29,10 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the compiled server and frontend assets
+# Copy the bundled server and frontend assets
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/dist-server ./dist-server
+COPY --from=builder /app/dist-server/index.cjs ./dist-server/index.cjs
 COPY --from=builder /app/package.json ./package.json
-
-# Copy diagnostic script
-COPY diagnostic.sh ./
-RUN chmod +x diagnostic.sh
 
 # Install only production dependencies (better-sqlite3 must be installed here)
 RUN npm install --omit=dev --no-audit --no-fund
@@ -48,15 +44,14 @@ COPY --from=builder /app/public/assets ./public/assets
 # Ensure uploads directory exists and set permissions
 RUN mkdir -p public/uploads
 
-# CRITICAL: Set full permissions on everything to ensure write access and execution
+# CRITICAL: Set full permissions on the database and public folders
 RUN chmod -R 777 .
 
 # Set environment to production
 ENV NODE_ENV=production
-ENV PORT=3001
+ENV PORT=10000
 
-EXPOSE 3001
+EXPOSE 10000
 
-# Start using the diagnostic entrypoint script
-# This script will log the environment and file list before starting the server
-ENTRYPOINT ["sh", "/app/diagnostic.sh"]
+# Start using the high-performance bundle
+CMD ["node", "dist-server/index.cjs"]
