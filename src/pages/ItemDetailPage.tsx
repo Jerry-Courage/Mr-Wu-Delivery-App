@@ -138,7 +138,7 @@ const ItemDetailPage = () => {
         <div className="px-4 pt-4 md:w-1/2 md:px-0 md:pt-0">
           <div className="flex items-start justify-between">
             <h1 className="text-xl font-bold text-foreground">{item.name}</h1>
-            <span className="text-xl font-bold text-primary">${item.price.toFixed(2)}</span>
+            <span className="text-xl font-bold text-primary">GH₵{item.price.toFixed(2)}</span>
           </div>
           {item.rating && (
             <div className="flex items-center gap-1 mt-1">
@@ -194,7 +194,7 @@ const ItemDetailPage = () => {
                     <span className={`text-sm ${selectedSize === i ? "font-semibold text-primary" : "text-foreground"}`}>{size.label}</span>
                   </div>
                   {size.price !== 0 && (
-                    <span className="text-sm text-muted-foreground">{size.price > 0 ? "+" : ""}${size.price.toFixed(2)}</span>
+                    <span className="text-sm text-muted-foreground">{size.price > 0 ? "+" : ""}GH₵{Math.abs(size.price).toFixed(2)}</span>
                   )}
                 </button>
               ))}
@@ -241,7 +241,7 @@ const ItemDetailPage = () => {
                     </div>
                     <span className="text-sm text-foreground">{extra.label}</span>
                   </div>
-                  <span className="text-sm text-muted-foreground">+${extra.price.toFixed(2)}</span>
+                  <span className="text-sm text-muted-foreground">+GH₵{extra.price.toFixed(2)}</span>
                 </button>
               ))}
             </div>
@@ -277,7 +277,7 @@ const ItemDetailPage = () => {
               </div>
               <p className="text-xs font-semibold text-foreground mt-1.5">{side.name}</p>
               <div className="flex items-center justify-between mt-0.5">
-                <span className="text-xs font-bold text-primary">${side.price.toFixed(2)}</span>
+                <span className="text-xs font-bold text-primary">GH₵{side.price.toFixed(2)}</span>
                 <button className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center">
                   <span className="text-sm leading-none">+</span>
                 </button>
@@ -312,7 +312,7 @@ const ItemDetailPage = () => {
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
           <div>
             <p className="text-xs text-primary font-semibold uppercase">Total Price</p>
-            <p className="text-xl font-bold text-foreground">${totalPrice.toFixed(2)}</p>
+            <p className="text-xl font-bold text-foreground">GH₵{totalPrice.toFixed(2)}</p>
           </div>
           <div className="flex gap-2">
             <button onClick={() => navigate(-1)} className="px-5 py-2.5 border border-border rounded-xl text-sm font-semibold text-foreground">Cancel</button>

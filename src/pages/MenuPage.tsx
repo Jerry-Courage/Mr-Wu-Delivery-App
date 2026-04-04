@@ -170,7 +170,7 @@ const MenuPage = () => {
                 </div>
               </div>
               <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                <span className="font-bold text-primary">${item.price.toFixed(2)}</span>
+                <span className="font-bold text-primary">GH₵{item.price.toFixed(2)}</span>
                 <button
                   onClick={(e) => { e.stopPropagation(); addItem(item); }}
                   className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center"

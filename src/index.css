@@ -113,8 +113,14 @@
 }
 
 @layer utilities {
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-mb {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
   }
   .scrollbar-hide {
     -ms-overflow-style: none;

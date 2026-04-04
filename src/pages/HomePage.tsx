@@ -250,7 +250,7 @@ const HomePage = () => {
                         {"aiReason" in item && item.aiReason && (
                           <p className="text-xs text-primary truncate">{String(item.aiReason)}</p>
                         )}
-                        <p className="text-sm font-bold text-foreground">${item.price.toFixed(2)}</p>
+                        <p className="text-sm font-bold text-foreground">GH₵{item.price.toFixed(2)}</p>
                       </div>
                       <button
                         data-testid={`button-add-${item.id}`}

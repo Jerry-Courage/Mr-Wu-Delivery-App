@@ -56,6 +56,7 @@ type AdminStats = {
   activeUsers: number;
   peakHours: { hour: string; count: number }[];
   userSegments: { name: string; value: number }[];
+  recentOrders?: { id: number }[];
 };
 
 type AdminUser = {
@@ -127,7 +128,7 @@ function DishModal({
     try {
       const formData = new FormData();
       formData.append("image", file);
-      const response = await api.post("/upload", formData);
+      const response = await api.post<{ url: string }>("/upload", formData);
       onChange({ ...form, imageUrl: response.url });
     } catch (err: any) {
       console.error("Upload failed", err);
@@ -172,7 +173,7 @@ function DishModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-neutral-500 uppercase tracking-widest block mb-1.5">Price ($) *</label>
+              <label className="text-xs font-semibold text-neutral-500 uppercase tracking-widest block mb-1.5">Price (GH₵) *</label>
               <input
                 type="number"
                 step="0.01"
@@ -623,7 +624,7 @@ export default function AdminDashboard() {
               {/* Stat Cards */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
                 {[
-                  { label: "Total Revenue", value: `$${stats?.totalRevenue.toFixed(2)}`, icon: DollarSign, color: "text-emerald-400", trend: "+12.5%" },
+                  { label: "Total Revenue", value: `GH₵${stats?.totalRevenue.toFixed(2)}`, icon: DollarSign, color: "text-emerald-400", trend: "+12.5%" },
                   { label: "Total Orders", value: stats?.totalOrders, icon: ShoppingBag, color: "text-blue-400", trend: "+8.2%" },
                   { label: "Active Customers", value: stats?.activeUsers ?? 0, icon: Users, color: "text-purple-400", trend: "+5.1%" },
                 ].map((stat, i) => (
@@ -666,7 +667,7 @@ export default function AdminDashboard() {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
                       <XAxis dataKey="date" stroke="#525252" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#525252" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                      <YAxis stroke="#525252" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `GH₵${value}`} />
                       <Tooltip 
                         contentStyle={{ backgroundColor: "#171717", border: "1px solid #404040", borderRadius: "12px" }}
                         itemStyle={{ color: "#fff" }}
@@ -898,7 +899,7 @@ export default function AdminDashboard() {
                   <div className="p-5 flex-1 flex flex-col">
                     <div className="flex justify-between items-start mb-1">
                       <h4 className="font-extrabold text-white text-lg tracking-tight group-hover:text-orange-500 transition-colors uppercase">{item.name}</h4>
-                      <span className="text-orange-500 font-black text-lg tabular-nums shadow-[0_0_10px_rgba(234,88,12,0.1)]">${item.price}</span>
+                      <span className="text-orange-500 font-black text-lg tabular-nums shadow-[0_0_10px_rgba(234,88,12,0.1)]">GH₵{item.price}</span>
                     </div>
                     <p className="text-[10px] text-neutral-300 font-black uppercase tracking-[0.15em] mb-2 px-1.5 py-0.5 bg-white/5 rounded w-fit border border-white/5">{item.category}</p>
                     <p className="text-xs text-neutral-200 italic line-clamp-2 mb-6 font-medium leading-relaxed">{item.description}</p>
@@ -1007,7 +1008,7 @@ export default function AdminDashboard() {
                             <span className="text-neutral-300 font-bold tabular-nums">{user.orderCount} Orders</span>
                           </td>
                           <td className="px-6 py-4">
-                            <span className="text-emerald-400 font-black tabular-nums">${user.totalSpend.toFixed(2)}</span>
+                            <span className="text-emerald-400 font-black tabular-nums">GH₵{user.totalSpend.toFixed(2)}</span>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
@@ -1135,7 +1136,7 @@ export default function AdminDashboard() {
                     <h3 className="font-black text-2xl uppercase tracking-tighter">Strategic Intelligence Report</h3>
                   </div>
                   <div className="space-y-6 text-neutral-100 leading-relaxed text-xl italic font-serif relative z-10 opacity-90 group-hover:opacity-100 transition-opacity border-l-4 border-orange-600/50 pl-6 py-2">
-                    {insightsData.insights}
+                    {(insightsData as any).insights}
                   </div>
                   <div className="pt-8 border-t border-white/10 flex gap-4 relative z-10">
                     <div className="flex-1 p-5 bg-white/5 rounded-2xl border border-white/10 text-center hover:bg-white/10 transition-colors">

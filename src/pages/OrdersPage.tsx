@@ -155,7 +155,7 @@ function OrderCard({ order, expanded, onToggle, onTrack, onReorder }: {
             {STATUS_LABELS[order.status]}
           </span>
           <span className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</span>
-          <span className="text-xs font-semibold text-foreground ml-auto">${parseFloat(order.total).toFixed(2)}</span>
+          <span className="text-xs font-semibold text-foreground ml-auto">GH₵{parseFloat(order.total).toFixed(2)}</span>
         </div>
       </div>
 
@@ -169,7 +169,7 @@ function OrderCard({ order, expanded, onToggle, onTrack, onReorder }: {
             {order.items.map(item => (
               <div key={item.id} className="flex justify-between text-xs text-muted-foreground">
                 <span>{item.quantity}× {item.name}</span>
-                <span>${(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
+                <span>GH₵{(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
               </div>
             ))}
             <p className="text-xs text-muted-foreground pt-1">📍 {order.deliveryAddress}</p>

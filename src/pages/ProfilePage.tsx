@@ -181,20 +181,22 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          <div className="mx-4 md:mx-0 -mt-1 bg-foreground rounded-xl p-4 text-primary-foreground">
+          <div className="mx-4 md:mx-0 -mt-1 bg-gradient-to-br from-primary to-primary/80 rounded-xl p-4 text-primary-foreground shadow-lg shadow-primary/20 animate-in zoom-in duration-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase opacity-70">Total Rewards</p>
-                <p className="text-2xl font-bold">2,450 pts</p>
+                <p className="text-xs uppercase opacity-80 font-bold tracking-wider">Total Rewards</p>
+                <p className="text-2xl font-black">2,450 pts</p>
               </div>
-              <Gift className="w-6 h-6 opacity-70" />
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                <Gift className="w-6 h-6 text-white" />
+              </div>
             </div>
-            <div className="mt-2 h-2 bg-primary-foreground/20 rounded-full overflow-hidden">
+            <div className="mt-3 h-2 bg-white/20 rounded-full overflow-hidden">
               <div className="h-full w-4/5 bg-green-400 rounded-full" />
             </div>
-            <div className="flex items-center justify-between mt-1.5 text-xs opacity-70">
-              <span>550 pts until Platinum</span>
-              <button className="text-primary-foreground font-semibold">Redeem</button>
+            <div className="flex items-center justify-between mt-2 text-xs font-medium">
+              <span className="opacity-90">550 pts until Platinum</span>
+              <button className="text-white underline underline-offset-2 font-bold">Redeem</button>
             </div>
           </div>
 

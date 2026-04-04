@@ -22,7 +22,7 @@ const faqs = [
 const notifications = [
   { icon: Truck, title: "Order #8829 Arriving Soon", desc: "Your Kung Pao Chicken is just 5 minutes away! Get ready for a delicious meal.", time: "2m ago", isNew: true },
   { icon: CreditCard, title: "Weekend Special: 20% OFF", desc: "Use code WU20 for 20% off all Dim Sum combos this weekend. Valid until Sunday midnight.", time: "1h ago", isNew: true },
-  { icon: CreditCard, title: "Refund Processed Successfully", desc: "The refund of $12.50 for Order #8712 has been sent to your original payment method.", time: "Yesterday", isNew: false },
+  { icon: CreditCard, title: "Refund Processed Successfully", desc: "The refund of GH₵12.50 for Order #8712 has been sent to your original payment method.", time: "Yesterday", isNew: false },
   { icon: Bell, title: "Account Security Update", desc: "We've enhanced our login security. Your account is now more protected than ever.", time: "2d ago", isNew: false },
 ];
 
