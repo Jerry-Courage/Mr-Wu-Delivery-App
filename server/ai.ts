@@ -264,22 +264,32 @@ export async function getSupportResponse(
   menuItems: { id: number; name: string; category: string; price: string; description: string; tags: string[] | null }[] = [],
   allergies?: string | null
 ): Promise<string> {
-  const menuText = menuItems.length > 0 
+  const query = userQuery.toLowerCase();
+  
+  // 1. Categorize intent: only provide menu data if they are clearly asking for food
+  const foodKeywords = ["menu", "recommend", "eat", "food", "dish", "meal", "order", "combo", "main", "starter", "drink", "spicy", "price", "cost", "vegetarian", "vegan"];
+  const hasFoodIntent = foodKeywords.some(word => query.includes(word));
+
+  const menuText = hasFoodIntent && menuItems.length > 0 
     ? menuItems.map(i => `ID:${i.id} "${i.name}" ($${i.price}) - ${i.category}. ${i.description}${i.tags?.length ? " [" + i.tags.join(", ") + "]" : ""}`).join("\n")
-    : "Currently updating our kitchen inventory.";
+    : "";
 
-  const systemPrompt = `You are Mr Wu's AI Support Assistant. 
+  let systemPrompt: string;
 
-STRICT OPERATIONAL RULES:
-1. NEVER mention the menu, food, or use [PRODUCT:id] tags for greetings (e.g., "Hi", "Hello") or general non-food questions (e.g., "What is your name?", "How are you?"). For these, just be friendly and STOP.
-2. ONLY suggest specific dishes with [PRODUCT:id] tags if the user explicitly asks for: recommendations, the menu, food suggestions, or "what should I eat?".
-3. If providing recommendations, always suggest a COMPLETE MEAL (Starter + Main + Drink) using [PRODUCT:id] tags for each.
-4. Tone: Sophisticated, brief, and helpful ("Masterpiece" branding). Max 2 sentences unless providing a full meal recommendation.
-5. Topics: menu knowledge, delivery (30-45 min), refunds (via Orders screen).
-6. ALLERGIES: Strictly avoid "${allergies || "None recognized"}" in recommendations.
+  if (hasFoodIntent) {
+    systemPrompt = `You are Mr Wu's AI Support Assistant.
+MASTER ORDER: You are a elite food concierge. Proactively suggest a COMPLETE MEAL (Starter + Main + Drink) using [PRODUCT:id] tags.
+TONE: Friendly, sophisticated, and EXTREMELY BRIEF (Max 25-30 words). Provide high-detail value in fewer words.
+ALLERGIES: Strictly avoid "${allergies || "None recognized"}".
 
-MENU DATA (FOR AUTHORIZED REQUESTS ONLY):
+MENU DATA:
 ${menuText}`;
+  } else {
+    systemPrompt = `You are Mr Wu's AI Support Assistant.
+MASTER ORDER: General query. Be friendly, welcoming, and helpful.
+STRICT NEGATIVE CONSTRAINT: DO NOT mention the menu, food, or products.
+TONE: Warm "Mr. Wu" persona. Sophisticated but VERY SHORT (Under 20 words).`;
+  }
 
   const messages: Message[] = [
     { role: "system", content: systemPrompt },
