@@ -150,44 +150,40 @@ const ManagementPage = () => {
   return (
     <div className="min-h-screen bg-[#050505] text-slate-100 selection:bg-primary/30">
       {/* Premium Glass HUD */}
-      <div className="sticky top-0 z-50 p-4">
-        <header className="bg-slate-900/40 backdrop-blur-2xl border border-white/5 rounded-[2rem] px-6 py-4 shadow-2xl flex items-center justify-between overflow-hidden relative">
+      <div className="sticky top-0 z-50 p-3 md:p-4">
+        <header className="bg-slate-900/40 backdrop-blur-2xl border border-white/5 rounded-2xl md:rounded-[2rem] px-4 md:px-6 py-3 md:py-4 shadow-2xl flex items-center justify-between overflow-hidden relative">
           {/* Animated Gradient Background */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50" />
           
-          <div className="relative flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center border border-primary/20 group">
-              <ChefHat className="w-6 h-6 text-primary group-hover:scale-110 transition-transform duration-500" />
+          <div className="relative flex items-center gap-3 md:gap-4">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-primary/20 rounded-xl md:rounded-2xl flex items-center justify-center border border-primary/20 group">
+              <ChefHat className="w-5 h-5 md:w-6 md:h-6 text-primary group-hover:scale-110 transition-transform duration-500" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-black text-xl tracking-tight uppercase italic italic-shadow">Mr Wu Kitchen</h1>
-                <div className="flex items-center gap-1.5 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                  <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Live Flow</span>
+                <h1 className="font-black text-lg md:text-xl tracking-tight uppercase italic italic-shadow">Kitchen</h1>
+                <div className="hidden xs:flex items-center gap-1.5 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest">Live</span>
                 </div>
               </div>
-              <p className="text-[10px] text-white/40 uppercase font-bold tracking-[0.2em] mt-0.5">Automated Command Center</p>
+              <p className="text-[8px] md:text-[10px] text-white/40 uppercase font-bold tracking-[0.2em] mt-0.5">Command Center</p>
             </div>
           </div>
 
-          <div className="relative flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-6 px-6 border-r border-white/5 mr-3">
+          <div className="relative flex items-center gap-2 md:gap-3">
+            <div className="hidden sm:flex items-center gap-4 px-4 border-r border-white/5 mr-2">
               <div className="text-center">
-                <p className="text-[10px] text-white/30 uppercase font-black tracking-widest">Active</p>
-                <p className="text-xl font-black text-white">{counts.all}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-[10px] text-white/30 uppercase font-black tracking-widest">Urgent</p>
-                <p className="text-xl font-black text-red-500">{urgentOrders.length}</p>
+                <p className="text-[8px] text-white/30 uppercase font-black tracking-widest">Active</p>
+                <p className="text-lg font-black text-white">{counts.all}</p>
               </div>
             </div>
             
-            <button onClick={() => refetch()} className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all active:scale-90 border border-white/5">
-              <RefreshCw className="w-4 h-4 text-white/60" />
+            <button onClick={() => refetch()} className="w-9 h-9 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all active:scale-90 border border-white/5">
+              <RefreshCw className="w-3.5 h-3.5 text-white/60" />
             </button>
-            <button onClick={() => { logout(); navigate("/login"); }} className="w-10 h-10 rounded-2xl bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center transition-all group border border-red-500/10">
-              <LogOut className="w-4 h-4 text-red-500" />
+            <button onClick={() => { logout(); navigate("/login"); }} className="w-9 h-9 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center transition-all group border border-red-500/10">
+              <LogOut className="w-3.5 h-3.5 text-red-500" />
             </button>
           </div>
         </header>
@@ -324,111 +320,111 @@ const ManagementPage = () => {
                         <div className="absolute inset-0 bg-red-500/[0.02] animate-pulse" />
                       )}
 
-                      {/* Header Section */}
-                      <div className="p-6 pb-4 flex items-start justify-between relative z-10">
-                        <div>
-                          <div className="flex items-center gap-3 mb-1">
-                             <h3 className="text-2xl font-black tracking-tighter text-white uppercase italic italic-shadow">
-                               ORDER #{String(order.id).slice(-4)}
-                             </h3>
-                             {isUrgent && <Flame className="w-5 h-5 text-red-500 animate-bounce" />}
+                        {/* Header Section */}
+                        <div className="p-4 md:p-6 pb-2 md:pb-4 flex items-start justify-between relative z-10">
+                          <div>
+                            <div className="flex items-center gap-2 md:gap-3 mb-1">
+                               <h3 className="text-xl md:text-2xl font-black tracking-tighter text-white uppercase italic italic-shadow">
+                                 #{String(order.id).slice(-4)}
+                               </h3>
+                               {isUrgent && <Flame className="w-4 h-4 md:w-5 md:h-5 text-red-500 animate-bounce" />}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 text-[8px] md:text-[10px] font-black text-white/30 uppercase tracking-[0.1em]">
+                               <Clock className="w-2.5 h-2.5" />
+                               <span>{formattedTime}</span>
+                               <span className="hidden xs:inline w-1 h-1 bg-white/20 rounded-full" />
+                               <span className={cn(isUrgent ? "text-red-500" : "text-primary")}>{elapsed}m</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 text-[10px] font-black text-white/30 uppercase tracking-[0.1em]">
-                             <Clock className="w-3 h-3" />
-                             <span>Recieved {formattedTime}</span>
-                             <span className="w-1 h-1 bg-white/20 rounded-full" />
-                             <span className={cn(isUrgent ? "text-red-500" : "text-primary")}>{elapsed} Min Elapsed</span>
+                          <div className={cn("px-3 md:px-4 py-1 md:py-1.5 rounded-lg md:rounded-xl border text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] shadow-lg", cfg.bg, cfg.color, "border-white/5")}>
+                             {cfg.label}
                           </div>
                         </div>
-                        <div className={cn("px-4 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-[0.2em] shadow-lg", cfg.bg, cfg.color, "border-white/5")}>
-                           {cfg.label}
-                        </div>
-                      </div>
 
-                      {/* Items Body */}
-                      <div className="px-6 py-2 space-y-3 relative z-10">
-                         <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                           {order.items.map((item, i) => (
-                             <div key={i} className="flex items-center justify-between group/item">
-                               <div className="flex items-center gap-4">
-                                  <div className="w-8 h-8 bg-white/5 rounded-xl flex items-center justify-center text-sm font-black text-white border border-white/5 group-hover/item:bg-primary group-hover/item:text-primary-foreground transition-all">
-                                    {item.quantity}
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-bold text-white group-hover/item:text-primary transition-colors">{item.name}</p>
-                                    {item.specialInstructions && (
-                                      <p className="text-[11px] text-amber-500 font-bold italic italic-shadow">★ {item.specialInstructions}</p>
-                                    )}
-                                  </div>
+                        {/* Items Body */}
+                        <div className="px-4 md:px-6 py-2 space-y-3 relative z-10">
+                           <div className="space-y-2 max-h-32 md:max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                             {order.items.map((item, i) => (
+                               <div key={i} className="flex items-center justify-between group/item">
+                                 <div className="flex items-center gap-3 md:gap-4">
+                                    <div className="w-7 h-7 md:w-8 md:h-8 bg-white/5 rounded-lg md:rounded-xl flex items-center justify-center text-xs md:text-sm font-black text-white border border-white/5 group-hover/item:bg-primary group-hover/item:text-primary-foreground transition-all">
+                                      {item.quantity}
+                                    </div>
+                                    <div>
+                                      <p className="text-xs md:text-sm font-bold text-white group-hover/item:text-primary transition-colors line-clamp-1">{item.name}</p>
+                                      {item.specialInstructions && (
+                                        <p className="text-[9px] md:text-[11px] text-amber-500 font-bold italic italic-shadow line-clamp-1">★ {item.specialInstructions}</p>
+                                      )}
+                                    </div>
+                                 </div>
+                                 <ChevronRight className="hidden xs:block w-3 h-3 text-white/20 group-hover/item:text-primary group-hover/item:translate-x-1 transition-all" />
                                </div>
-                               <ChevronRight className="w-3 h-3 text-white/20 group-hover/item:text-primary group-hover/item:translate-x-1 transition-all" />
-                             </div>
-                           ))}
-                         </div>
+                             ))}
+                           </div>
 
-                         {order.notes && (
-                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 flex gap-3">
-                               <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-                               <p className="text-xs font-bold text-amber-500 italic-shadow">{order.notes}</p>
-                            </div>
-                         )}
-                      </div>
+                           {order.notes && (
+                              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl md:rounded-2xl p-2 md:p-3 flex gap-2 md:gap-3">
+                                 <AlertTriangle className="w-3 h-3 md:w-4 md:h-4 text-amber-500 shrink-0" />
+                                 <p className="text-[10px] md:text-xs font-bold text-amber-500 italic-shadow">{order.notes}</p>
+                              </div>
+                           )}
+                        </div>
 
-                      {/* Customer Info Mini-Bar */}
-                      <div className="px-6 py-4 mt-2 flex items-center justify-between border-t border-white/5 bg-white/[0.02]">
-                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
-                               <UserCheck className="w-3 h-3 text-white/40" />
-                            </div>
-                            <div>
-                               <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Customer</p>
-                               <p className="text-[11px] font-bold text-white">{order.customer.name}</p>
-                            </div>
-                         </div>
-                         <div className="text-right">
-                            <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Location</p>
-                            <p className="text-[11px] font-bold text-white flex items-center gap-1">
-                               <Timer className="w-3 h-3 text-primary" />
-                               {order.id % 2 === 0 ? "Fast Zone" : "Tier 1"}
-                            </p>
-                         </div>
-                      </div>
+                        {/* Customer Info Mini-Bar */}
+                        <div className="px-4 md:px-6 py-3 md:py-4 mt-2 flex items-center justify-between border-t border-white/5 bg-white/[0.02]">
+                           <div className="flex items-center gap-2 md:gap-3">
+                              <div className="w-7 h-7 md:w-8 md:h-8 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
+                                 <UserCheck className="w-2.5 h-2.5 md:w-3 md:h-3 text-white/40" />
+                              </div>
+                              <div>
+                                 <p className="text-[8px] md:text-[9px] font-black text-white/40 uppercase tracking-widest">Client</p>
+                                 <p className="text-[10px] md:text-[11px] font-bold text-white line-clamp-1">{order.customer.name}</p>
+                              </div>
+                           </div>
+                           <div className="text-right">
+                              <p className="text-[8px] md:text-[9px] font-black text-white/40 uppercase tracking-widest">Zone</p>
+                              <p className="text-[10px] md:text-[11px] font-bold text-white flex items-center justify-end gap-1">
+                                 <Timer className="w-2.5 h-2.5 md:w-3 md:h-3 text-primary" />
+                                 {order.id % 2 === 0 ? "Fast" : "Tier 1"}
+                              </p>
+                           </div>
+                        </div>
 
-                      {/* Kinetic Action Space */}
-                      <div className="p-6 pt-2">
-                        {nextStatus ? (
-                          <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => statusMutation.mutate({ id: order.id, status: nextStatus })}
-                            disabled={statusMutation.isPending}
-                            className="w-full relative group/btn h-14 bg-primary rounded-2xl overflow-hidden shadow-2xl transition-all"
-                          >
-                             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
-                             <span className="relative z-10 flex items-center justify-center gap-3 text-primary-foreground font-black uppercase tracking-[0.2em] italic">
-                                {NEXT_LABEL[order.status]}
-                                <ChevronRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
-                             </span>
-                          </motion.button>
-                        ) : order.status === "ready" && !order.riderId ? (
-                           <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setAssignModal({ orderId: order.id })}
-                            className="w-full h-14 bg-violet-600 rounded-2xl group/btn overflow-hidden shadow-2xl relative"
-                          >
-                             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
-                             <span className="relative z-10 flex items-center justify-center gap-3 text-white font-black uppercase tracking-[0.2em] italic">
-                                <Bike className="w-5 h-5" />
-                                Assign Dispatch
-                             </span>
-                          </motion.button>
-                        ) : (
-                          <div className="h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-[10px] font-black text-white/30 uppercase tracking-[0.4em]">
-                             Waiting for Rider
-                          </div>
-                        )}
-                      </div>
+                        {/* Kinetic Action Space */}
+                        <div className="p-4 md:p-6 pt-2">
+                          {nextStatus ? (
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => statusMutation.mutate({ id: order.id, status: nextStatus })}
+                              disabled={statusMutation.isPending}
+                              className="w-full relative group/btn h-12 md:h-14 bg-primary rounded-xl md:rounded-2xl overflow-hidden shadow-2xl transition-all"
+                            >
+                               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
+                               <span className="relative z-10 flex items-center justify-center gap-2 md:gap-3 text-primary-foreground font-black uppercase tracking-widest md:tracking-[0.2em] italic text-xs md:text-sm">
+                                  {NEXT_LABEL[order.status]}
+                                  <ChevronRight className="w-4 h-4 md:w-5 md:h-5 group-hover/btn:translate-x-1 transition-transform" />
+                               </span>
+                            </motion.button>
+                          ) : order.status === "ready" && !order.riderId ? (
+                             <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => setAssignModal({ orderId: order.id })}
+                              className="w-full h-12 md:h-14 bg-violet-600 rounded-xl md:rounded-2xl group/btn overflow-hidden shadow-2xl relative"
+                            >
+                               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
+                               <span className="relative z-10 flex items-center justify-center gap-2 md:gap-3 text-white font-black uppercase tracking-widest md:tracking-[0.2em] italic text-xs md:text-sm">
+                                  <Bike className="w-4 h-4 md:w-5 md:h-5" />
+                                  Assign
+                               </span>
+                            </motion.button>
+                          ) : (
+                            <div className="h-12 md:h-14 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl flex items-center justify-center text-[8px] md:text-[10px] font-black text-white/30 uppercase tracking-[0.2em] md:tracking-[0.4em]">
+                               Waiting for Rider
+                            </div>
+                          )}
+                        </div>
                     </motion.div>
                   );
                 })}

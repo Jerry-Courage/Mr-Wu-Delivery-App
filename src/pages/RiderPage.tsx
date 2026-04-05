@@ -144,34 +144,34 @@ const RiderPage = () => {
   return (
     <div className="min-h-screen bg-[#050505] text-slate-100 selection:bg-primary/30 font-sans">
       {/* AMOLED HUD Header */}
-      <div className="sticky top-0 z-50 p-4">
-        <header className="bg-slate-900/40 backdrop-blur-2xl border border-white/5 rounded-[2rem] px-6 py-4 shadow-2xl flex items-center justify-between overflow-hidden relative">
+      <div className="sticky top-0 z-50 p-3 md:p-4">
+        <header className="bg-slate-900/40 backdrop-blur-2xl border border-white/5 rounded-2xl md:rounded-[2rem] px-4 md:px-6 py-3 md:py-4 shadow-2xl flex items-center justify-between overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50" />
           
-          <div className="relative flex items-center gap-4">
-             <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center border border-primary/20 group">
-                <Bike className="w-6 h-6 text-primary group-hover:scale-110 transition-transform duration-500" />
+          <div className="relative flex items-center gap-3 md:gap-4">
+             <div className="w-10 h-10 md:w-12 md:h-12 bg-primary/20 rounded-xl md:rounded-2xl flex items-center justify-center border border-primary/20 group">
+                <Bike className="w-5 h-5 md:w-6 md:h-6 text-primary group-hover:scale-110 transition-transform duration-500" />
              </div>
              <div>
                 <div className="flex items-center gap-2">
-                   <h1 className="font-black text-xl tracking-tight uppercase italic italic-shadow">Dispatch Hub</h1>
+                   <h1 className="font-black text-lg md:text-xl tracking-tight uppercase italic italic-shadow">Dispatch</h1>
                    {isSharing && (
-                      <div className="flex items-center gap-1.5 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                         <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Tracking Live</span>
+                      <div className="hidden xs:flex items-center gap-1.5 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                         <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" />
+                         <span className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest">Live</span>
                       </div>
                    )}
                 </div>
-                <p className="text-[10px] text-white/40 uppercase font-bold tracking-[0.2em] mt-0.5">{user?.name} · Active Fleet</p>
+                <p className="text-[8px] md:text-[10px] text-white/40 uppercase font-bold tracking-[0.2em] mt-0.5">{user?.name?.split(' ')[0]} · Fleet</p>
              </div>
           </div>
 
-          <div className="flex items-center gap-3 relative">
-             <button onClick={() => refetch()} className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center active:scale-90 border border-white/5">
-                <RefreshCw className="w-4 h-4 text-white/60" />
+          <div className="flex items-center gap-2 md:gap-3 relative">
+             <button onClick={() => refetch()} className="w-9 h-9 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center active:scale-90 border border-white/5">
+                <RefreshCw className="w-3.5 h-3.5 text-white/60" />
              </button>
-             <button onClick={() => { logout(); navigate("/login"); }} className="w-10 h-10 rounded-2xl bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center transition-all group border border-red-500/10">
-                <LogOut className="w-4 h-4 text-red-500" />
+             <button onClick={() => { logout(); navigate("/login"); }} className="w-9 h-9 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center transition-all group border border-red-500/10">
+                <LogOut className="w-3.5 h-3.5 text-red-500" />
              </button>
           </div>
         </header>
@@ -256,8 +256,8 @@ const RiderPage = () => {
                            )}
                         >
                            {/* Status Progress Track */}
-                           <div className="px-8 pt-6 pb-2">
-                              <div className="flex items-center gap-1.5 h-1">
+                           <div className="px-5 md:px-8 pt-5 md:pt-6 pb-2">
+                              <div className="flex items-center gap-1 h-0.5 md:h-1">
                                  {DELIVERY_STEPS.map((_, i) => (
                                     <div key={i} className={cn(
                                        "flex-1 h-full rounded-full transition-all duration-1000",
@@ -265,17 +265,17 @@ const RiderPage = () => {
                                     )} />
                                  ))}
                               </div>
-                              <div className="flex justify-between mt-3">
+                              <div className="flex justify-between mt-2.5 md:mt-3">
                                  {DELIVERY_STEPS.map((step, i) => (
-                                    <div key={step.key} className="flex flex-col items-center gap-1.5">
+                                    <div key={step.key} className="flex flex-col items-center gap-1 md:gap-1.5 text-center">
                                        <div className={cn(
-                                          "w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-700 border",
+                                          "w-5 h-5 md:w-6 md:h-6 rounded-lg flex items-center justify-center transition-all duration-700 border",
                                           i <= stepIdx ? "bg-primary text-primary-foreground border-primary" : "bg-white/5 text-white/20 border-white/5"
                                        )}>
                                           {step.icon}
                                        </div>
                                        <span className={cn(
-                                          "text-[8px] font-black uppercase tracking-widest",
+                                          "text-[7px] md:text-[8px] font-black uppercase tracking-widest",
                                           i <= stepIdx ? "text-primary" : "text-white/10"
                                        )}>{step.label}</span>
                                     </div>
@@ -284,61 +284,61 @@ const RiderPage = () => {
                            </div>
 
                            {/* Card Header */}
-                           <div className="px-8 py-5 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
+                           <div className="px-5 md:px-8 py-4 md:py-5 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
                               <div>
-                                 <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase italic-shadow">Order #{String(order.id).slice(-4)}</h3>
-                                 <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mt-1">{order.customer.name}</p>
+                                 <h3 className="text-xl md:text-2xl font-black text-white italic tracking-tighter uppercase italic-shadow">#{String(order.id).slice(-4)}</h3>
+                                 <p className="text-[9px] md:text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mt-1 line-clamp-1">{order.customer.name}</p>
                               </div>
                               {isPickedUp && (
-                                 <motion.div animate={{ opacity: [1, 0.6, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                                    <Zap size={10} className="fill-primary-foreground" />
-                                    Live Ops
+                                 <motion.div animate={{ opacity: [1, 0.6, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-primary text-primary-foreground text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                                    <Zap size={9} className="fill-primary-foreground" />
+                                    Live
                                  </motion.div>
                               )}
                            </div>
 
                            {/* Mission Briefing */}
-                           <div className="px-8 py-6 space-y-6">
-                              <div className="flex gap-4">
-                                 <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center shrink-0 border border-white/5">
-                                    <MapPin className="text-red-500" size={20} />
+                           <div className="px-5 md:px-8 py-5 md:py-6 space-y-5 md:space-y-6">
+                              <div className="flex gap-3 md:gap-4">
+                                 <div className="w-10 h-10 md:w-12 md:h-12 bg-white/5 rounded-xl md:rounded-2xl flex items-center justify-center shrink-0 border border-white/5">
+                                    <MapPin className="text-red-500 w-5 h-5 md:w-6 md:h-6" />
                                  </div>
-                                 <div className="flex-1">
-                                    <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mb-1">Target Coordinates</p>
-                                    <p className="text-sm font-bold text-white tracking-tight leading-relaxed">{order.deliveryAddress}</p>
-                                    <button className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest mt-2 hover:opacity-80 transition-opacity">
-                                       <Navigation size={12} />
-                                       Launch Navigation
+                                 <div className="flex-1 min-w-0">
+                                    <p className="text-[8px] md:text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mb-1">Coordinates</p>
+                                    <p className="text-xs md:text-sm font-bold text-white tracking-tight leading-relaxed line-clamp-2 md:line-clamp-none">{order.deliveryAddress}</p>
+                                    <button className="flex items-center gap-1.5 text-primary font-black text-[9px] md:text-[10px] uppercase tracking-widest mt-2 hover:opacity-80 transition-opacity">
+                                       <Navigation size={10} />
+                                       Navigate
                                     </button>
                                  </div>
                               </div>
 
-                              <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-3xl">
-                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-white/5 rounded-2xl flex items-center justify-center border border-white/5">
-                                       <MapIcon className="text-white/40" size={16} />
+                              <div className="flex items-center justify-between p-3 md:p-4 bg-white/[0.02] border border-white/5 rounded-2xl md:rounded-3xl">
+                                 <div className="flex items-center gap-2 md:gap-3">
+                                    <div className="w-8 h-8 md:w-10 md:h-10 bg-white/5 rounded-xl md:rounded-2xl flex items-center justify-center border border-white/5">
+                                       <MapIcon className="text-white/40 w-3.5 h-3.5 md:w-4 md:h-4" />
                                     </div>
                                     <div>
-                                       <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Client Contact</p>
-                                       <a href={`tel:${order.customer.phone}`} className="text-xs font-bold text-white hover:text-primary transition-colors">{order.customer.phone || "Hidden"}</a>
+                                       <p className="text-[8px] md:text-[9px] font-black text-white/40 uppercase tracking-widest leading-none mb-1">Client</p>
+                                       <a href={`tel:${order.customer.phone}`} className="text-[10px] md:text-xs font-bold text-white hover:text-primary transition-colors">{order.customer.phone || "Hidden"}</a>
                                     </div>
                                  </div>
                                  <div className="text-right">
-                                    <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Reward</p>
-                                    <p className="text-xs font-black text-primary italic">GH₵{(parseFloat(order.total) * 0.1).toFixed(2)}</p>
+                                    <p className="text-[8px] md:text-[9px] font-black text-white/40 uppercase tracking-widest leading-none mb-1">Reward</p>
+                                    <p className="text-[10px] md:text-xs font-black text-primary italic">GH₵{(parseFloat(order.total) * 0.1).toFixed(2)}</p>
                                  </div>
                               </div>
 
                               {/* Action Cluster */}
-                              <div className="flex gap-3 pt-2">
+                              <div className="flex flex-wrap gap-3 pt-1">
                                  {order.status === "assigned" && (
                                     <motion.button
                                        whileTap={{ scale: 0.98 }}
                                        onClick={() => statusMutation.mutate({ id: order.id, status: "picked_up" })}
                                        disabled={statusMutation.isPending}
-                                       className="flex-1 h-16 bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] italic rounded-3xl flex items-center justify-center gap-3 shadow-2xl transition-all active:scale-95 disabled:opacity-30"
+                                       className="flex-1 min-w-[200px] h-14 md:h-16 bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] italic rounded-2xl md:rounded-3xl flex items-center justify-center gap-3 shadow-2xl transition-all active:scale-95 disabled:opacity-30 text-xs"
                                     >
-                                       <Package size={20} />
+                                       <Package size={18} />
                                        Establish Pickup
                                     </motion.button>
                                  )}
@@ -348,22 +348,22 @@ const RiderPage = () => {
                                           whileTap={{ scale: 0.98 }}
                                           onClick={() => statusMutation.mutate({ id: order.id, status: "delivered" })}
                                           disabled={statusMutation.isPending}
-                                          className="flex-1 h-16 bg-emerald-600 text-white font-black uppercase tracking-[0.2em] italic rounded-3xl flex items-center justify-center gap-3 shadow-2xl transition-all active:scale-95 disabled:opacity-30"
+                                          className="flex-1 min-w-0 h-14 md:h-16 bg-emerald-600 text-white font-black uppercase tracking-[0.2em] italic rounded-2xl md:rounded-3xl flex items-center justify-center gap-3 shadow-2xl transition-all active:scale-95 disabled:opacity-30 text-xs"
                                        >
-                                          <ShieldCheck size={20} />
-                                          Confirm Delivery
+                                          <ShieldCheck size={18} />
+                                          Deliver
                                        </motion.button>
                                        <motion.button
                                           whileTap={{ scale: 0.95 }}
                                           onClick={() => openChat(order.id)}
                                           className={cn(
-                                             "w-16 h-16 rounded-3xl flex items-center justify-center shrink-0 border relative transition-all",
+                                             "w-14 h-14 md:w-16 md:h-16 rounded-2xl md:rounded-3xl flex items-center justify-center shrink-0 border relative transition-all",
                                              hasUnread ? "bg-orange-500 border-orange-500 text-white" : "bg-white/5 border-white/10 text-white/40 hover:text-white"
                                           )}
                                        >
-                                          <MessageCircle size={24} />
+                                          <MessageCircle size={20} />
                                           {hasUnread && (
-                                             <span className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-red-600 text-white font-black text-[10px] rounded-full flex items-center justify-center shadow-lg">
+                                             <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white font-black text-[9px] rounded-full flex items-center justify-center shadow-lg">
                                                 {unreadCounts[order.id]}
                                              </span>
                                           )}

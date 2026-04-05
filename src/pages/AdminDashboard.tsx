@@ -636,26 +636,27 @@ export default function AdminDashboard() {
       </aside>
 
       {/* Mobile Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-neutral-900/40 backdrop-blur-2xl border-t border-white/10 h-16 flex items-center justify-around px-6 lg:hidden z-50">
+      <nav className="fixed bottom-0 left-0 right-0 bg-neutral-900/60 backdrop-blur-3xl border-t border-white/10 h-16 flex items-center justify-around px-2 lg:hidden z-50">
         {[
-          { id: "overview", icon: LayoutDashboard },
-          { id: "menu", icon: UtensilsCrossed },
-          { id: "users", icon: Users },
-          { id: "insights", icon: TrendingUp },
-          { id: "staff", icon: ShieldCheck },
-          { id: "ai", icon: Sparkles },
+          { id: "overview", icon: LayoutDashboard, label: "Stats" },
+          { id: "menu", icon: UtensilsCrossed, label: "Menu" },
+          { id: "users", icon: Users, label: "Users" },
+          { id: "insights", icon: TrendingUp, label: "Data" },
+          { id: "staff", icon: ShieldCheck, label: "Staff" },
+          { id: "ai", icon: Sparkles, label: "AI" },
         ].map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={cn(
-              "p-2 rounded-xl transition-all duration-300 relative",
-              activeTab === tab.id ? "text-orange-500 scale-110" : "text-neutral-500"
+              "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 relative min-w-[50px]",
+              activeTab === tab.id ? "text-orange-500 scale-105" : "text-neutral-500"
             )}
           >
-            <tab.icon size={22} />
+            <tab.icon size={18} />
+            <span className="text-[8px] font-black uppercase tracking-tighter">{tab.label}</span>
             {activeTab === tab.id && (
-              <motion.div layoutId="mob-pill" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(234,88,12,1)]" />
+              <motion.div layoutId="mob-pill" className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(234,88,12,1)]" />
             )}
           </button>
         ))}
@@ -1084,7 +1085,8 @@ export default function AdminDashboard() {
               </div>
 
               <Card className="bg-neutral-900/40 backdrop-blur-md border-white/5 overflow-hidden">
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className="border-b border-white/5 bg-white/5">
@@ -1132,6 +1134,44 @@ export default function AdminDashboard() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-white/5">
+                  {usersData?.filter(u => {
+                    const matchesSearch = u.name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.toLowerCase().includes(userSearch.toLowerCase());
+                    const matchesRole = roleFilter === "all" || u.role === roleFilter;
+                    return matchesSearch && matchesRole;
+                  }).map((user) => (
+                    <div key={user.id} className="p-4 space-y-3">
+                       <div className="flex justify-between items-start">
+                          <div className="flex flex-col">
+                             <span className="text-white font-bold">{user.name}</span>
+                             <span className="text-[10px] text-neutral-500">{user.email}</span>
+                          </div>
+                          <span className={cn(
+                            "px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-tighter border",
+                            user.role === "rider" ? "bg-orange-500/10 text-orange-400 border-orange-500/20" : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                          )}>
+                            {user.role}
+                          </span>
+                       </div>
+                       <div className="grid grid-cols-2 gap-4 py-2 border-y border-white/5">
+                          <div>
+                             <p className="text-[8px] font-black uppercase text-neutral-500 tracking-widest">Volume</p>
+                             <p className="text-xs font-bold text-neutral-300">{user.orderCount} Orders</p>
+                          </div>
+                          <div>
+                             <p className="text-[8px] font-black uppercase text-neutral-500 tracking-widest">Total Yield</p>
+                             <p className="text-xs font-black text-emerald-400">GH₵{user.totalSpend.toFixed(2)}</p>
+                          </div>
+                       </div>
+                       <div className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                          <span className="text-[8px] font-black uppercase tracking-widest text-neutral-500">Active Duty</span>
+                       </div>
+                    </div>
+                  ))}
                 </div>
               </Card>
             </motion.div>
