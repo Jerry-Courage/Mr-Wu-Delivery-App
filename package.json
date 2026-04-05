@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "db:push": "drizzle-kit push",
-    "build": "vite build && npm run build:server",
+    "build": "rm -rf dist dist-server && vite build && npm run build:server",
     "build:server": "esbuild server/index.ts --bundle --platform=node --target=node20 --outfile=dist-server/index.cjs --external:better-sqlite3 --format=cjs",
     "start": "npm run db:push && node dist-server/index.cjs",
     "build:dev": "vite build --mode development",

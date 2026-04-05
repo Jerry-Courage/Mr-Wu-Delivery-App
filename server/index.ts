@@ -92,6 +92,21 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 // Serve frontend in production
 if (process.env.NODE_ENV === "production" || process.env.RENDER) {
   const distPath = path.resolve(process.cwd(), "dist");
+  
+  if (fs.existsSync(distPath)) {
+    console.log(`### SERVER_CHECKPOINT: Serving static files from ${distPath}`);
+    const assetsDir = path.join(distPath, "assets");
+    if (fs.existsSync(assetsDir)) {
+      const files = fs.readdirSync(assetsDir);
+      console.log(`### SERVER_CHECKPOINT: Assets found: ${files.length} items`);
+      console.log(`### SERVER_CHECKPOINT: Main Asset: ${files.find(f => f.startsWith("index-") && f.endsWith(".js"))}`);
+    } else {
+      console.warn("### SERVER_ERROR: assets directory not found in dist!");
+    }
+  } else {
+    console.error("### SERVER_ERROR: dist directory not found! Frontend build might have failed.");
+  }
+
   app.use(express.static(distPath));
   
   // Custom SPA Fallback with strict asset protection
