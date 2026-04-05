@@ -15,6 +15,9 @@ const MODELS = [
 const rateLimitedUntil: Record<string, number> = {};
 const COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
 
+// Mr Wu's Flagship Kitchen (Accra Mall)
+export const RESTAURANT_LOCATION = { lat: 5.6201, lng: -0.1740 };
+
 interface Message {
   role: "system" | "user" | "assistant";
   content: string;
@@ -262,21 +265,44 @@ export async function getSupportResponse(
   userQuery: string,
   history: Message[] = [],
   menuItems: { id: number; name: string; category: string; price: string; description: string; tags: string[] | null }[] = [],
-  allergies?: string | null
+  allergies?: string | null,
+  activeOrders: (any & { items: any[] })[] = []
 ): Promise<string> {
   const query = userQuery.toLowerCase();
   
-  // 1. Categorize intent: only provide menu data if they are clearly asking for food
+  // 1. Categorize intent
   const foodKeywords = ["menu", "recommend", "eat", "food", "dish", "meal", "order", "combo", "main", "starter", "drink", "spicy", "price", "cost", "vegetarian", "vegan", "dinner", "lunch", "breakfast", "starters", "mains"];
+  const trackingKeywords = ["where", "track", "status", "rider", "delivery", "arrival", "eta", "location", "coming"];
+  
   const hasFoodIntent = foodKeywords.some(word => query.includes(word));
+  const hasTrackingIntent = trackingKeywords.some(word => query.includes(word));
 
   const menuText = hasFoodIntent && menuItems.length > 0 
     ? menuItems.map(i => `ID:${i.id} "${i.name}" ($${i.price}) - ${i.category}. ${i.description}${i.tags?.length ? " [" + i.tags.join(", ") + "]" : ""}`).join("\n")
     : "";
 
+  const orderContext = activeOrders.length > 0 
+    ? activeOrders.map(o => {
+        const items = o.items.map((i: any) => `${i.quantity}x ${i.name}`).join(", ");
+        const riderLoc = o.riderLat && o.riderLng ? `Rider at [${o.riderLat}, ${o.riderLng}]` : "Rider location unknown";
+        const restLoc = `Restaurant at [${RESTAURANT_LOCATION.lat}, ${RESTAURANT_LOCATION.lng}]`;
+        const custLoc = o.customerLat && o.customerLng ? `Customer at [${o.customerLat}, ${o.customerLng}]` : "Customer location unknown";
+        return `Order #${o.id}: Status=${o.status}. Items: ${items}. ${riderLoc}. ${restLoc}. ${custLoc}.`;
+      }).join("\n")
+    : "No active orders for this user.";
+
   let systemPrompt: string;
 
-  if (hasFoodIntent) {
+  if (hasTrackingIntent && activeOrders.length > 0) {
+    systemPrompt = `You are Mr Wu's elite tracking coordinator.
+Goal: Provide a precise update on the user's order using the TRACKING CONTEXT below.
+Coordinates: Translate [lat, lng] into human-friendly terms relative to the restaurant and customer.
+Note: If the rider is closer to the customer than the restaurant, say they're "on the home stretch".
+Tone: Informed, professional, and very brief (under 30 words).
+
+TRACKING CONTEXT:
+${orderContext}`;
+  } else if (hasFoodIntent) {
     systemPrompt = `You are Mr Wu's elite food concierge. 
 Goal: Provide a complete meal recommendation (Starter + Main + Drink) using the MENU DATA below.
 Requirement: You MUST use [PRODUCT:id] tags for every dish you mention to generate interactive cards.

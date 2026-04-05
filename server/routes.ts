@@ -600,20 +600,25 @@ router.post("/ai/support", aiLimiter, async (req: AuthRequest, res) => {
       tags: m.tags ? JSON.parse(m.tags) : [],
     }));
 
-    const user = await (async () => {
+    const { user, activeOrders } = await (async () => {
       const authHeader = req.headers.authorization;
-      if (!authHeader) return null;
+      if (!authHeader) return { user: null, activeOrders: [] };
       const token = authHeader.split(" ")[1];
-      if (!token) return null;
+      if (!token) return { user: null, activeOrders: [] };
       try {
         const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
-        return await storage.getUserById(decoded.id);
+        const [userData, orders] = await Promise.all([
+          storage.getUserById(decoded.id),
+          storage.getOrdersByUser(decoded.id)
+        ]);
+        const active = orders.filter(o => !["delivered", "cancelled"].includes(o.status));
+        return { user: userData, activeOrders: active };
       } catch {
-        return null;
+        return { user: null, activeOrders: [] };
       }
     })();
 
-    const reply = await getSupportResponse(message, history || [], simplified, user?.allergies);
+    const reply = await getSupportResponse(message, history || [], simplified, user?.allergies, activeOrders);
     res.json({ reply });
   } catch (err) {
     console.error("### AI_SUPPORT_ROUTE_ERROR:", err);
