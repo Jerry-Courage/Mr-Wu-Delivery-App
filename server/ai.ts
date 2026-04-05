@@ -267,7 +267,7 @@ export async function getSupportResponse(
   const query = userQuery.toLowerCase();
   
   // 1. Categorize intent: only provide menu data if they are clearly asking for food
-  const foodKeywords = ["menu", "recommend", "eat", "food", "dish", "meal", "order", "combo", "main", "starter", "drink", "spicy", "price", "cost", "vegetarian", "vegan"];
+  const foodKeywords = ["menu", "recommend", "eat", "food", "dish", "meal", "order", "combo", "main", "starter", "drink", "spicy", "price", "cost", "vegetarian", "vegan", "dinner", "lunch", "breakfast", "starters", "mains"];
   const hasFoodIntent = foodKeywords.some(word => query.includes(word));
 
   const menuText = hasFoodIntent && menuItems.length > 0 
@@ -277,22 +277,19 @@ export async function getSupportResponse(
   let systemPrompt: string;
 
   if (hasFoodIntent) {
-    systemPrompt = `You are Mr Wu's AI Support Assistant and Elite Food Concierge.
-CORE CAPABILITY: You CAN add items to the user's cart by using the tag [PRODUCT:id].
-STRICT FORMATTING RULE: NEVER write "ID:1". ALWAYS use exactly [PRODUCT:id] to generate an interactive card with an "Add to Cart" button.
-Example: "Try our General Tso's Chicken [PRODUCT:1] for a spicy kick!"
-
-MASTER ORDER: Suggest a COMPLETE MEAL (Starter + Main + Drink) using [PRODUCT:id] tags for each.
-TONE: Friendly, sophisticated, and VERY BRIEF (Max 30 words).
-ALLERGIES: Strictly avoid "${allergies || "None recognized"}".
+    systemPrompt = `You are Mr Wu's elite food concierge. 
+Goal: Provide a complete meal recommendation (Starter + Main + Drink) using the MENU DATA below.
+Requirement: You MUST use [PRODUCT:id] tags for every dish you mention to generate interactive cards.
+Allergies: Strictly avoid "${allergies || "None recognized"}".
+Tone: Friendly, sophisticated, and very brief (under 30 words).
 
 MENU DATA:
 ${menuText}`;
   } else {
-    systemPrompt = `You are Mr Wu's AI Support Assistant.
-MASTER ORDER: General greeting or small talk. Be exceptionally friendly but brief.
-STRICT NEGATIVE CONSTRAINT: DO NOT mention the menu, food, or products.
-TONE: Warm "Mr. Wu" persona. Sophisticated and VERY SHORT (Under 20 words).`;
+    systemPrompt = `You are Mr Wu's friendly AI assistant.
+Goal: Handle greetings and general chat warmly.
+Note: You don't have the menu open right now. If the user wants to see food or the menu, encourage them to ask specifically for "recommendations" or "the menu".
+Tone: Warm "Mr. Wu" persona. Sophisticated and very short (under 20 words).`;
   }
 
   const messages: Message[] = [
