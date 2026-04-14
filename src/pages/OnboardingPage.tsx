@@ -23,7 +23,7 @@ const roles = [
   {
     id: "customer",
     title: "Customer",
-    description: "Order delicious food from Mr Wu's and get it delivered to your door.",
+    description: "Order delicious food from Fishing Panda and get it delivered to your door.",
     icon: ShoppingBag,
     color: "from-orange-500 to-red-500",
     features: ["Real-time tracking", "AI recommendations", "Express delivery"]
@@ -112,7 +112,7 @@ export default function OnboardingPage() {
                       transition={{ delay: 0.2 }}
                       className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2"
                     >
-                      <Sparkles size={14} /> Welcome to Mr Wu's
+                      <Sparkles size={14} /> Welcome to Fishing Panda
                     </motion.div>
                     <h1 className="text-4xl font-black tracking-tighter uppercase italic leading-[0.9] bg-clip-text text-transparent bg-gradient-to-b from-white to-white/70">
                       Select your role
@@ -252,7 +252,7 @@ export default function OnboardingPage() {
       </AnimatePresence>
 
       <div className="absolute bottom-8 left-0 right-0 text-center opacity-30 pointer-events-none">
-        <p className="text-[10px] uppercase tracking-[0.3em] font-light">Mr Wu's Modern Delivery Infrastructure v2.1</p>
+        <p className="text-[10px] uppercase tracking-[0.3em] font-light">Fishing Panda Modern Delivery Infrastructure v2.1</p>
       </div>
     </div>
   );

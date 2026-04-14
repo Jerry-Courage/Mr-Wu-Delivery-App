@@ -87,7 +87,7 @@ const ProfilePage = () => {
           <div className="w-14 h-14 flex items-center justify-center overflow-hidden">
             <img 
               src={logo} 
-              alt="Mr Wu" 
+              alt="Fishing Panda" 
               className="w-full h-full object-contain" 
             />
           </div>
@@ -191,7 +191,7 @@ const ProfilePage = () => {
         <div className="w-14 h-14 flex items-center justify-center overflow-hidden">
           <img 
             src={logo} 
-            alt="Mr Wu" 
+            alt="Fishing Panda" 
             className="w-full h-full object-contain" 
           />
         </div>

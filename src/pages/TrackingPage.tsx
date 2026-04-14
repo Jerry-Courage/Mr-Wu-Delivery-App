@@ -313,7 +313,7 @@ const TrackingPage = () => {
               <CheckCircle2 className="text-emerald-500" size={56} />
             </motion.div>
             <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Delivered!</h2>
-            <p className="text-neutral-400 mt-2 font-medium">Hope you enjoy your Mr Wu meal!</p>
+            <p className="text-neutral-400 mt-2 font-medium">Hope you enjoy your Fishing Panda meal!</p>
             <div className="mt-6 px-6 py-4 bg-neutral-900 rounded-2xl border border-white/10 text-left w-full max-w-sm">
               <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">Order Total</p>
               <p className="text-2xl font-black text-white">GH₵{parseFloat(order.total).toFixed(2)}</p>

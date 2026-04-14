@@ -24,7 +24,7 @@ export const useGeolocation = () => {
         {
           headers: {
             'Accept-Language': 'en',
-            'User-Agent': "Mr Wu's Food Delivery Audit",
+            'User-Agent': "Fishing Panda Food Delivery Audit",
           },
         }
       );

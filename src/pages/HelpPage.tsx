@@ -83,7 +83,7 @@ const HelpPage = () => {
           </div>
           <div className="text-left">
             <h3 className="font-bold text-sm">AI Live Support</h3>
-            <p className="text-xs opacity-80">Instant help from Mr Wu's Brain</p>
+            <p className="text-xs opacity-80">Instant help from Fishing Panda Brain</p>
           </div>
           <ChevronRight className="w-5 h-5 ml-auto" />
         </button>
@@ -186,7 +186,7 @@ const HelpPage = () => {
       {/* Footer */}
       <div className="text-center mt-8 pb-4">
         <p className="text-xs text-muted-foreground">Support ID: WU-HELP-99X2-771</p>
-        <p className="text-xs text-muted-foreground">Mr Wu's Customer Service © 2024</p>
+        <p className="text-xs text-muted-foreground">Fishing Panda Customer Service © 2024</p>
       </div>
       <SupportChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>

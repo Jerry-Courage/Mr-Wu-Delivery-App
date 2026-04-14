@@ -37,8 +37,8 @@ export default function SplashScreen() {
           
           <img 
             src={logo} 
-            alt="Mr. Wu Mascot" 
-            className="w-full h-full object-contain relative z-10 drop-shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+            alt="Fishing Panda Mascot" 
+            className="w-full h-full object-contain relative z-10 drop-shadow-[0_0_20px_rgba(255,184,0,0.3)]"
           />
         </motion.div>
 
@@ -49,8 +49,8 @@ export default function SplashScreen() {
           transition={{ delay: 0.2, duration: 0.6 }}
           className="text-center space-y-1"
         >
-          <h1 className="text-4xl font-black tracking-tighter text-white uppercase italic">Mr Wu's</h1>
-          <p className="text-[10px] font-black uppercase tracking-[0.6em] text-primary/80">Imperial Chinese Delivery</p>
+          <h1 className="text-4xl font-black tracking-tighter text-white uppercase italic">Fishing Panda</h1>
+          <p className="text-[10px] font-black uppercase tracking-[0.6em] text-primary/80">Premium Seafood Delivery</p>
         </motion.div>
       </div>
 
@@ -61,7 +61,7 @@ export default function SplashScreen() {
         transition={{ delay: 0.5 }}
         className="absolute bottom-12 left-0 right-0 text-center"
       >
-        <p className="text-[9px] uppercase tracking-[0.5em] font-light text-white">Modern Chinese Infrastructure</p>
+        <p className="text-[9px] uppercase tracking-[0.5em] font-light text-white">Modern Delivery Infrastructure</p>
       </motion.div>
     </div>
   );

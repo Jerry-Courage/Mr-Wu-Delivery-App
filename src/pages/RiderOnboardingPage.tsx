@@ -127,7 +127,7 @@ export default function RiderOnboardingPage() {
       </div>
 
       <div className="absolute bottom-8 left-0 right-0 text-center opacity-30 pointer-events-none">
-        <p className="text-[10px] uppercase tracking-[0.3em] font-light">Become a Mr Wu Rider v2.1</p>
+        <p className="text-[10px] uppercase tracking-[0.3em] font-light">Become a Fishing Panda Rider v2.1</p>
       </div>
     </div>
   );

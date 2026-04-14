@@ -591,7 +591,7 @@ export default function AdminDashboard() {
       <aside className="fixed left-0 top-0 bottom-0 w-64 bg-neutral-900/60 backdrop-blur-xl border-r border-white/10 hidden lg:flex flex-col p-6 space-y-8 z-50">
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 flex items-center justify-center overflow-hidden">
-            <img src={logo} alt="Mr. Wu" className="w-full h-full object-contain" />
+            <img src={logo} alt="Fishing Panda" className="w-full h-full object-contain" />
           </div>
           <span className="font-exrabold text-xl tracking-tighter text-white">WU-OS</span>
         </div>

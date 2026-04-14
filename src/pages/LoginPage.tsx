@@ -115,12 +115,12 @@ const LoginPage = () => {
           >
             <img 
               src={logo} 
-              alt="Mr. Wu Logo" 
+              alt="Fishing Panda Logo" 
               className="w-full h-full object-contain" 
             />
           </motion.div>
           <h1 className="text-3xl font-bold text-white tracking-tight">Welcome back</h1>
-          <p className="text-muted-foreground text-sm mt-2">Log in to your Mr. Wu account</p>
+          <p className="text-muted-foreground text-sm mt-2">Log in to your Fishing Panda account</p>
         </div>
 
         {/* Auth Tab Selector */}
@@ -292,7 +292,7 @@ const LoginPage = () => {
           </button>
           
           <p className="text-center text-[10px] text-muted-foreground tracking-wide leading-loose max-w-[280px]">
-            By continuing, you agree to Mr. Wu's <span className="text-white border-b border-white/20 cursor-pointer">Terms of Service</span> and <span className="text-white border-b border-white/20 cursor-pointer">Privacy Policy</span>.
+            By continuing, you agree to Fishing Panda's <span className="text-white border-b border-white/20 cursor-pointer">Terms of Service</span> and <span className="text-white border-b border-white/20 cursor-pointer">Privacy Policy</span>.
           </p>
         </div>
       </motion.div>

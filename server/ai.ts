@@ -15,7 +15,7 @@ const MODELS = [
 const rateLimitedUntil: Record<string, number> = {};
 const COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
 
-// Mr Wu's Flagship Kitchen (Accra Mall)
+// Fishing Panda Flagship Kitchen (Accra Mall)
 export const RESTAURANT_LOCATION = { lat: 5.6201, lng: -0.1740 };
 
 interface Message {
@@ -62,8 +62,8 @@ async function chat(messages: Message[]): Promise<string> {
         headers: {
           Authorization: `Bearer ${key}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": "https://mrwus.app",
-          "X-Title": "Mr Wu's Delivery App",
+          "HTTP-Referer": "https://fishingpanda.app",
+          "X-Title": "Fishing Panda's Delivery App",
         },
         body: JSON.stringify({
           model: modelId,
@@ -204,7 +204,7 @@ export async function getKitchenSummary(
     return `Order #${String(o.id).padStart(5, "0")} [${o.status}, ${age}min ago]: ${items}`;
   }).join("\n");
 
-  const prompt = `Kitchen assistant at Mr Wu's. Active orders:\n${ordersText}\nGive a 1-2 sentence briefing. Flag orders waiting >15 min. Be concise.`;
+  const prompt = `Kitchen assistant at Fishing Panda. Active orders:\n${ordersText}\nGive a 1-2 sentence briefing. Flag orders waiting >15 min. Be concise.`;
 
   const response = await chat([
     { role: "system", content: "You are a kitchen operations assistant. Be brief and actionable." },
@@ -249,7 +249,7 @@ export async function getAdminInsights(
   const popularText = stats.popularItems.map(i => `${i.name} (${i.count} sold)`).join(", ");
   const recentRevenue = stats.revenue.slice(-7).map(r => `$${r.amount}`).join(", ");
 
-  const prompt = `Business consultant for Mr Wu's Chinese Delivery.
+  const prompt = `Business consultant for Fishing Panda Seafood Delivery.
 30-Day: Revenue=$${stats.totalRevenue.toFixed(2)}, Orders=${stats.totalOrders}, Top items: ${popularText}, Last 7 days revenue: ${recentRevenue}.
 Give a professional 2-3 sentence strategic insight.`;
 
@@ -294,7 +294,7 @@ export async function getSupportResponse(
   let systemPrompt: string;
 
   if (hasTrackingIntent && activeOrders.length > 0) {
-    systemPrompt = `You are Mr Wu's elite tracking coordinator.
+    systemPrompt = `You are Fishing Panda's elite tracking coordinator.
 Goal: Provide a precise update on the user's order using the TRACKING CONTEXT below.
 Coordinates: Translate [lat, lng] into human-friendly terms relative to the restaurant and customer.
 Note: If the rider is closer to the customer than the restaurant, say they're "on the home stretch".
@@ -303,7 +303,7 @@ Tone: Informed, professional, and very brief (under 30 words).
 TRACKING CONTEXT:
 ${orderContext}`;
   } else if (hasFoodIntent) {
-    systemPrompt = `You are Mr Wu's elite food concierge. 
+    systemPrompt = `You are Fishing Panda's elite food concierge. 
 Goal: Provide a complete meal recommendation (Starter + Main + Drink) using the MENU DATA below.
 Requirement: You MUST use [PRODUCT:id] tags for every dish you mention to generate interactive cards.
 Allergies: Strictly avoid "${allergies || "None recognized"}".
@@ -312,10 +312,10 @@ Tone: Friendly, sophisticated, and very brief (under 30 words).
 MENU DATA:
 ${menuText}`;
   } else {
-    systemPrompt = `You are Mr Wu's friendly AI assistant.
+    systemPrompt = `You are Fishing Panda's friendly AI assistant.
 Goal: Handle greetings and general chat warmly.
 Note: You don't have the menu open right now. If the user wants to see food or the menu, encourage them to ask specifically for "recommendations" or "the menu".
-Tone: Warm "Mr. Wu" persona. Sophisticated and very short (under 20 words).`;
+Tone: Warm "Fishing Panda" persona. Sophisticated and very short (under 20 words).`;
   }
 
   const messages: Message[] = [

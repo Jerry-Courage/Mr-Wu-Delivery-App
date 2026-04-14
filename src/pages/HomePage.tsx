@@ -12,11 +12,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
 
 const categories = [
-  { icon: "🍲", label: "Combos" },
+  { icon: "🍱", label: "Combos" },
   { icon: "🍜", label: "Noodles" },
-  { icon: "🍚", label: "Rice" },
-  { icon: "🥬", label: "Veggie" },
-  { icon: "🔔", label: "Specials" },
+  { icon: "🍣", label: "Sushi" },
+  { icon: "🐟", label: "Seafood" },
+  { icon: "🎋", label: "Specials" },
 ];
 
 interface AIRecommendation {
@@ -112,7 +112,7 @@ const HomePage = () => {
       <header className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2 max-w-[65%]">
           <div className="w-14 h-14 flex items-center justify-center flex-shrink-0 animate-in fade-in zoom-in duration-500 overflow-hidden">
-            <img src={logo} alt="Mr. Wu Logo" className="w-full h-full object-contain" />
+            <img src={logo} alt="Fishing Panda Logo" className="w-full h-full object-contain" />
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Deliver to</span>
@@ -160,7 +160,7 @@ const HomePage = () => {
           <h1 className="text-2xl font-bold text-foreground">
             Hi, {user?.name?.split(" ")[0] || "there"}! 👋
           </h1>
-          <p className="text-muted-foreground text-sm">Hungry for some Mr Wu's?</p>
+          <p className="text-muted-foreground text-sm">Hungry for some Fishing Panda?</p>
         </div>
         <div
           onClick={() => navigate("/profile")}
@@ -186,7 +186,7 @@ const HomePage = () => {
             </div>
             <div className="flex-1">
               <p className="text-xs font-semibold text-primary uppercase">Fastest Delivery</p>
-              <p className="text-sm text-foreground">Mr Wu's Tse Addo • 12 mins</p>
+              <p className="text-sm text-foreground">Fishing Panda Tse Addo • 12 mins</p>
             </div>
             <button 
               onClick={(e) => {
@@ -288,7 +288,7 @@ const HomePage = () => {
             <div className="p-5 pr-32">
               <span className="bg-secondary text-secondary-foreground text-xs font-bold px-2 py-1 rounded-md">Weekend Special</span>
               <h3 className="text-xl font-bold text-primary-foreground mt-2">Get 30% Off Your First Combo!</h3>
-              <p className="text-primary-foreground/80 text-xs mt-1">Valid until Sunday. Use code: WUFIRST30</p>
+              <p className="text-primary-foreground/80 text-xs mt-1">Valid until Sunday. Use code: PANDAFIRST30</p>
               <button onClick={() => navigate("/menu")} className="mt-3 bg-card text-primary text-sm font-bold px-4 py-2 rounded-lg">Order Now</button>
             </div>
             <img src={promoCombo} alt="Promo" className="absolute right-2 bottom-2 w-24 h-24 rounded-xl object-cover" loading="lazy" />
@@ -304,7 +304,7 @@ const HomePage = () => {
                 <div className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
                   <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center text-2xl flex-shrink-0">🥡</div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">Mr Wu's — Order #{lastOrder.id}</p>
+                    <p className="text-sm font-semibold text-foreground truncate">Fishing Panda — Order #{lastOrder.id}</p>
                     <p className="text-xs text-muted-foreground truncate">
                       {lastOrder.items?.map(i => `${i.name}${i.quantity > 1 ? ` x${i.quantity}` : ""}`).join(", ") || "Previous order"}
                     </p>
