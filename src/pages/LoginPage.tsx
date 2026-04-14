@@ -98,38 +98,38 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0C0C0C] flex flex-col items-center justify-center px-6 safe-top safe-bottom relative">
+    <div className="min-h-screen bg-[#0C0C0C] flex flex-col items-center px-6 py-8 overflow-y-auto overflow-x-hidden safe-top safe-bottom relative">
       {/* Subtle Premium Ambiance */}
       <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
 
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm"
+        className="w-full max-w-sm my-auto relative z-10"
       >
         {/* Header Section */}
-        <div className="flex flex-col items-center mb-12">
+        <div className="flex flex-col items-center mb-8">
           <motion.div 
             whileHover={{ scale: 1.02 }}
-            className="w-32 h-32 flex items-center justify-center mb-6"
+            className="w-24 h-24 flex items-center justify-center mb-4"
           >
             <img 
               src={logo} 
               alt="Fishing Panda Logo" 
-              className="w-full h-full object-contain" 
+              className="w-full h-full object-contain drop-shadow-xl" 
             />
           </motion.div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Welcome back</h1>
-          <p className="text-muted-foreground text-sm mt-2">Log in to your Fishing Panda account</p>
+          <h1 className="text-[26px] font-black text-white tracking-tight">Welcome back</h1>
+          <p className="text-muted-foreground text-xs mt-1.5 font-medium">Log in to your Fishing Panda account</p>
         </div>
 
         {/* Auth Tab Selector */}
-        <div className="flex bg-[#161616] p-1 rounded-2xl mb-8 border border-white/5">
+        <div className="flex bg-[#161616] p-1 rounded-2xl mb-6 border border-white/5">
           {(["login", "register"] as Tab[]).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 py-3 rounded-xl text-xs font-semibold transition-all duration-300 ${
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 ${
                 tab === t 
                   ? "bg-primary text-white shadow-lg" 
                   : "text-muted-foreground hover:text-white"

@@ -86,9 +86,9 @@ export default function OnboardingPage() {
   const currentRoleData = roles.find(r => r.id === selectedRole);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center overflow-hidden relative selection:bg-orange-500/30">
+    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden relative selection:bg-orange-500/30">
       {/* Background Glow */}
-      <div className="absolute top-0 left-0 w-full h-[50vh] bg-gradient-to-b from-orange-500/10 via-transparent to-transparent pointer-events-none" />
+      <div className="fixed top-0 left-0 w-full h-[50vh] bg-gradient-to-b from-orange-500/10 via-transparent to-transparent pointer-events-none" />
       <motion.div 
         animate={{ 
           scale: [1, 1.2, 1],
