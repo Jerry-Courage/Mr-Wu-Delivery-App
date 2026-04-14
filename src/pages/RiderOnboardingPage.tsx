@@ -1,42 +1,46 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Banknote, Clock, ShieldCheck, ArrowRight, Sparkles, Zap, Bike } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const riderSlides = [
   {
     id: 1,
     title: "Elite Earnings",
     description: "Earn competitive rates with instant daily payouts directly to your account.",
-    icon: <Banknote className="text-emerald-500" size={48} />,
+    icon: <Banknote className="text-emerald-500" size={56} />,
     badge: <Sparkles size={14} className="text-emerald-400" />,
     badgeText: "High Income",
-    color: "from-emerald-500/20 to-transparent"
+    color: "from-emerald-500/30 to-emerald-900/10",
+    glowColor: "bg-emerald-500/20"
   },
   {
     id: 2,
     title: "Total Flexibility",
     description: "Be your own boss. Work when you want, where you want, with no fixed schedules.",
-    icon: <Clock className="text-blue-500" size={48} />,
+    icon: <Clock className="text-blue-500" size={56} />,
     badge: <Zap size={14} className="text-blue-400" />,
     badgeText: "Your Schedule",
-    color: "from-blue-500/20 to-transparent"
+    color: "from-blue-500/30 to-blue-900/10",
+    glowColor: "bg-blue-500/20"
   },
   {
     id: 3,
     title: "Ride with Pride",
     description: "Join Ghana's most premium delivery fleet. Get top-tier gear and 24/7 support.",
-    icon: <Bike className="text-orange-500" size={48} />,
+    icon: <Bike className="text-orange-500" size={56} />,
     badge: <ShieldCheck size={14} className="text-orange-400" />,
     badgeText: "Elite Fleet",
-    color: "from-orange-500/20 to-transparent"
+    color: "from-orange-500/30 to-orange-900/10",
+    glowColor: "bg-orange-500/20"
   }
 ];
 
 export default function RiderOnboardingPage() {
   const navigate = useNavigate();
-  const [currentSlide, setCurrentSlide] = React.useState(0);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   const handleNext = () => {
     if (currentSlide < riderSlides.length - 1) {
@@ -47,46 +51,60 @@ export default function RiderOnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center overflow-hidden relative">
+    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center overflow-hidden relative selection:bg-blue-500/30 w-full h-full">
       {/* Background Glow */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 left-0 w-full h-[50vh] bg-gradient-to-b from-blue-500/5 via-transparent to-transparent pointer-events-none" />
 
-      <div className="flex-1 w-full flex flex-col items-center justify-between py-12 px-6 relative z-10">
+      <div className="flex-1 w-full flex flex-col items-center justify-between pb-8 pt-12 px-6 relative z-10 h-full">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentSlide}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="flex-1 flex flex-col items-center justify-center text-center space-y-8"
+            className="flex-1 flex flex-col items-center justify-center text-center space-y-10 w-full"
           >
-            {/* Decorative Background Blob */}
-            <div className={`absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-br ${riderSlides[currentSlide].color} rounded-full blur-[100px] pointer-events-none transition-all duration-700`} />
+            {/* Decorative Animated Background Blob */}
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: [1, 1.1, 1], opacity: 1 }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className={cn(`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] rounded-full blur-[90px] pointer-events-none`, riderSlides[currentSlide].glowColor)} 
+            />
 
-            {/* Visual Icon Container */}
-            <div className="relative">
+            {/* Visual Icon Container with Floating Effect */}
+            <motion.div 
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="relative"
+            >
               <div className="absolute inset-0 bg-white/5 rounded-[2.5rem] blur-2xl" />
-              <div className="w-32 h-32 bg-neutral-900 border border-white/10 rounded-[2.5rem] flex items-center justify-center shadow-2xl relative z-10 transition-transform duration-500 hover:scale-110">
+              <div className={cn("w-36 h-36 bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] flex items-center justify-center shadow-[0_0_50px_rgba(0,0,0,0.5)] relative z-10 transition-transform duration-500", `bg-gradient-to-br ${riderSlides[currentSlide].color}`)}>
                 {riderSlides[currentSlide].icon}
               </div>
-            </div>
+              {/* Small decorative orbiting element */}
+              <motion.div 
+                animate={{ rotate: 360 }}
+                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                className="absolute -inset-4 border border-white/5 rounded-[3rem] pointer-events-none"
+              />
+            </motion.div>
 
             {/* Text Content */}
-            <div className="space-y-4 relative z-10">
+            <div className="space-y-4 relative z-10 max-w-sm px-4">
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/60"
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-[10px] font-black uppercase tracking-widest text-[#FFF] shadow-md"
               >
                 {riderSlides[currentSlide].badge} {riderSlides[currentSlide].badgeText}
               </motion.div>
-              <h2 className="text-4xl font-black tracking-tighter uppercase italic text-white leading-[0.9]">
+              <h2 className="text-[2.25rem] leading-[1] font-black tracking-tighter uppercase italic text-white drop-shadow-xl">
                 {riderSlides[currentSlide].title}
               </h2>
-              <p className="text-neutral-400 text-base font-medium leading-relaxed max-w-[280px] mx-auto">
+              <p className="text-neutral-400 text-[15px] font-medium leading-relaxed">
                 {riderSlides[currentSlide].description}
               </p>
             </div>
@@ -94,40 +112,38 @@ export default function RiderOnboardingPage() {
         </AnimatePresence>
 
         {/* Footer Controls */}
-        <div className="w-full space-y-8 relative z-10">
+        <div className="w-full space-y-8 relative z-10 mt-auto">
           {/* Pagination Dots */}
-          <div className="flex justify-center gap-2">
+          <div className="flex justify-center gap-2 mb-2">
             {riderSlides.map((_, i) => (
-              <div
+              <motion.div
                 key={i}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === currentSlide ? "w-8 bg-emerald-600 shadow-[0_0_10px_rgba(5,150,105,0.6)]" : "w-1.5 bg-white/20"
-                }`}
+                className={cn("h-1.5 rounded-full transition-all duration-500", 
+                  i === currentSlide 
+                    ? cn("w-10", riderSlides[currentSlide].glowColor.replace("bg-", "bg-").replace("/20", "")) 
+                    : "w-2 bg-white/20"
+                )}
               />
             ))}
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             <Button
               onClick={handleNext}
-              className="w-full h-16 rounded-[2rem] bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest text-lg shadow-xl shadow-emerald-600/10 active:scale-95 transition-all"
+              className="w-full h-14 rounded-2xl bg-white text-black hover:bg-neutral-200 font-black uppercase tracking-widest text-[13px] shadow-[0_0_40px_rgba(255,255,255,0.15)] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
-              {currentSlide === riderSlides.length - 1 ? "Join the Fleet" : "Next"}
-              <ArrowRight size={20} className="ml-2" />
+              {currentSlide === riderSlides.length - 1 ? "Start Earning" : "Continue"}
+              <ArrowRight size={18} />
             </Button>
 
             <button 
               onClick={() => navigate("/login?role=rider&signup=true")}
-              className="py-2 text-[10px] font-black uppercase tracking-[0.4em] text-white/30 hover:text-white transition-colors"
+              className="py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
             >
-              Already Registered? Sign In
+              Already a partner? Login
             </button>
           </div>
         </div>
-      </div>
-
-      <div className="absolute bottom-8 left-0 right-0 text-center opacity-30 pointer-events-none">
-        <p className="text-[10px] uppercase tracking-[0.3em] font-light">Become a Fishing Panda Rider v2.1</p>
       </div>
     </div>
   );

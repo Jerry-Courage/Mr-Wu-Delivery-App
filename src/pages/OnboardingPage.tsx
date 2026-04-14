@@ -23,17 +23,19 @@ const roles = [
   {
     id: "customer",
     title: "Customer",
-    description: "Order delicious food from Fishing Panda and get it delivered to your door.",
+    description: "Order delicious food from Fishing Panda and get it delivered.",
     icon: ShoppingBag,
-    color: "from-primary to-primary/70",
+    color: "from-orange-500 to-orange-600",
+    shadow: "shadow-orange-500/20",
     features: ["Real-time tracking", "AI recommendations", "Express delivery"]
   },
   {
     id: "rider",
-    title: "Rider",
-    description: "Join our elite fleet and deliver joy (and food) to our valued customers.",
+    title: "Delivery Partner",
+    description: "Join our elite fleet and earn money on your own schedule.",
     icon: Bike,
-    color: "from-zinc-400 to-zinc-600",
+    color: "from-blue-500 to-blue-600",
+    shadow: "shadow-blue-500/20",
     features: ["Flexible hours", "Instant payouts", "Rider assistance"]
   },
   {
@@ -42,6 +44,7 @@ const roles = [
     description: "The heart of the operation. Manage orders and ensure quality.",
     icon: ChefHat,
     color: "from-zinc-500 to-zinc-700",
+    shadow: "shadow-zinc-500/20",
     features: ["Order management", "Inventory control", "Performance analytics"],
     isPrivate: true
   },
@@ -50,12 +53,12 @@ const roles = [
     title: "Oversight",
     description: "Complete restaurant management and AI business insights.",
     icon: LayoutDashboard,
-    color: "from-zinc-600 to-zinc-800",
+    color: "from-emerald-500 to-emerald-700",
+    shadow: "shadow-emerald-500/20",
     features: ["Full analytics", "Menu management", "AI Consultant"],
     isPrivate: true
   }
 ];
-
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
@@ -64,23 +67,44 @@ export default function OnboardingPage() {
   const [showCarousel, setShowCarousel] = useState(true);
 
   const containerVariants = {
-    hidden: { opacity: 0, x: 20 },
-    visible: { opacity: 1, x: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
-    exit: { opacity: 0, x: -20, transition: { duration: 0.3 } }
-  } as const;
+    hidden: { opacity: 0, scale: 0.95, filter: "blur(5px)" },
+    visible: { opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0.4, ease: "easeOut" } },
+    exit: { opacity: 0, scale: 1.05, filter: "blur(5px)", transition: { duration: 0.3 } }
+  };
 
   const handleNext = () => {
-    if (step === 1 && selectedRole) setStep(2);
+    if (step === 1 && selectedRole) {
+      if (selectedRole === "rider") {
+        navigate("/rider-onboarding");
+      } else {
+        setStep(2);
+      }
+    }
     else if (step === 2) navigate(`/login?role=${selectedRole}&signup=true`);
   };
 
   const currentRoleData = roles.find(r => r.id === selectedRole);
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center overflow-hidden relative">
+    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center overflow-hidden relative selection:bg-orange-500/30">
       {/* Background Glow */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-white/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 left-0 w-full h-[50vh] bg-gradient-to-b from-orange-500/10 via-transparent to-transparent pointer-events-none" />
+      <motion.div 
+        animate={{ 
+          scale: [1, 1.2, 1],
+          opacity: [0.3, 0.5, 0.3],
+        }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-orange-500/20 rounded-full blur-[140px] pointer-events-none" 
+      />
+      <motion.div 
+        animate={{ 
+          scale: [1, 1.3, 1],
+          opacity: [0.2, 0.4, 0.2],
+        }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[140px] pointer-events-none" 
+      />
 
       <AnimatePresence mode="wait">
         {showCarousel ? (
@@ -90,12 +114,12 @@ export default function OnboardingPage() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="w-full flex-1 flex flex-col pt-12"
+            className="w-full flex-1 flex flex-col pt-12 relative z-10"
           >
-            <MobileCarousel onComplete={() => navigate("/login?role=customer&signup=true")} />
+            <MobileCarousel onComplete={() => setShowCarousel(false)} />
           </motion.div>
         ) : (
-          <div className="w-full max-w-md relative z-10 px-4">
+          <div className="w-full max-w-md relative z-10 px-6 py-8 flex flex-col h-full lg:h-auto min-h-screen lg:min-h-0">
             <AnimatePresence mode="wait">
               {step === 1 && (
                 <motion.div
@@ -104,77 +128,96 @@ export default function OnboardingPage() {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  className="space-y-8"
+                  className="space-y-10 flex-1 flex flex-col pt-8"
                 >
-                  <div className="space-y-2 text-center">
+                  <div className="space-y-3 text-center pt-8">
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-primary mb-2 shadow-[0_0_15px_rgba(255,184,0,0.15)]"
+                      transition={{ delay: 0.1 }}
+                      className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/70 mb-2 backdrop-blur-md"
                     >
-                      <Sparkles size={14} /> Welcome to Fishing Panda
+                      <Sparkles size={14} className="text-orange-400" /> Getting Started
                     </motion.div>
-                    <h1 className="text-4xl font-black tracking-tighter uppercase italic leading-[0.9] bg-clip-text text-transparent bg-gradient-to-b from-white to-white/70">
-                      Select your role
+                    <h1 className="text-[2.25rem] font-black tracking-tighter uppercase italic leading-[1] text-white">
+                      Choose Your <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">Journey</span>
                     </h1>
-                    <p className="text-neutral-400 font-medium">Choose how you want to interact with the platform</p>
+                    <p className="text-neutral-400 text-sm font-medium px-4">How would you like to use Fishing Panda today?</p>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4">
-                    {roles.filter(r => !r.isPrivate).map((role) => (
-                      <Card
+                  <div className="grid grid-cols-1 gap-4 flex-1 content-center">
+                    {roles.filter(r => !r.isPrivate).map((role, idx) => (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 + idx * 0.1 }}
                         key={role.id}
                         onClick={() => setSelectedRole(role.id)}
                         className={cn(
-                          "relative p-5 cursor-pointer transition-all duration-300 border bg-black/40 backdrop-blur-3xl group overflow-hidden rounded-[1.5rem]",
+                          "relative p-5 cursor-pointer transition-all duration-300 border bg-[#0A0A0A]/80 backdrop-blur-3xl group overflow-hidden rounded-3xl",
                           selectedRole === role.id 
-                            ? "border-primary/50 shadow-[0_0_30px_rgba(255,184,0,0.1)] scale-[1.02]" 
-                            : "border-white/5 hover:border-white/20 hover:scale-[1.01]"
+                            ? "border-orange-500/50 shadow-[0_0_40px_rgba(249,115,22,0.15)] scale-[1.02] bg-[#111]" 
+                            : "border-white/5 hover:border-white/20 active:scale-[0.98]"
                         )}
                       >
                         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <div className="relative flex items-center gap-4">
+                        
+                        {/* Selected background glow */}
+                        {selectedRole === role.id && (
+                          <div className={cn("absolute right-0 top-0 w-32 h-32 blur-3xl opacity-20 pointer-events-none rounded-full", role.color.split(' ')[0].replace('from-', 'bg-'))} />
+                        )}
+
+                        <div className="relative flex items-center gap-5">
                           <div className={cn(
-                            "p-3.5 rounded-2xl bg-gradient-to-br transition-all duration-300 group-hover:scale-110 shadow-lg",
+                            "p-4 rounded-2xl bg-gradient-to-br transition-all duration-300 group-hover:scale-110 shadow-lg flex-shrink-0",
                             role.color,
-                            selectedRole === role.id ? "shadow-primary/20" : "shadow-black/50"
+                            selectedRole === role.id ? role.shadow : "shadow-black/50"
                           )}>
-                            <role.icon className={selectedRole === role.id && role.id === 'customer' ? "text-primary-foreground" : "text-white"} size={26} />
+                            <role.icon className="text-white" size={24} />
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-black text-lg uppercase tracking-tight text-white mb-0.5">{role.title}</h3>
-                            </div>
-                            <p className="text-sm text-neutral-400 font-medium line-clamp-2 leading-tight">{role.description}</p>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-black text-lg uppercase tracking-tight text-white mb-1">{role.title}</h3>
+                            <p className="text-xs text-neutral-400 font-medium line-clamp-2 leading-relaxed">{role.description}</p>
                           </div>
-                          {selectedRole === role.id && (
-                            <motion.div layoutId="check" className="text-primary flex-shrink-0">
-                              <CheckCircle2 size={28} className="fill-primary/20" />
-                            </motion.div>
-                          )}
+                          
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors duration-300 ml-2"
+                            style={{
+                              borderColor: selectedRole === role.id ? 'rgb(249, 115, 22)' : 'rgba(255,255,255,0.1)'
+                            }}>
+                            {selectedRole === role.id && (
+                              <motion.div 
+                                layoutId="role-check"
+                                className="w-3 h-3 rounded-full bg-orange-500"
+                              />
+                            )}
+                          </div>
                         </div>
-                      </Card>
+                      </motion.div>
                     ))}
                   </div>
 
-                  <Button
-                    disabled={!selectedRole}
-                    onClick={handleNext}
-                    className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-primary-foreground transition-all font-black uppercase tracking-widest text-lg gap-2 shadow-[0_10px_40px_-10px_rgba(255,184,0,0.5)]"
-                  >
-                    Continue <ArrowRight size={20} />
-                  </Button>
-
-                  <p className="text-center text-[10px] font-black uppercase tracking-widest text-neutral-500">
-                    Already have an account?{" "}
-                    <button 
-                      onClick={() => navigate("/login")}
-                      className="text-primary hover:underline font-black"
+                  <div className="pb-8 space-y-6">
+                    <Button
+                      disabled={!selectedRole}
+                      onClick={handleNext}
+                      className={cn(
+                        "w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[13px] gap-2 transition-all duration-300 shadow-xl",
+                        selectedRole ? "bg-white text-black hover:bg-neutral-200 shadow-white/10" : "bg-white/5 text-white/50 border border-white/5"
+                      )}
                     >
-                      Sign In
-                    </button>
-                  </p>
+                      Continue <ArrowRight size={18} />
+                    </Button>
+
+                    <p className="text-center text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                      Already have an account?{" "}
+                      <button 
+                        onClick={() => navigate("/login")}
+                        className="text-white hover:text-orange-400 transition-colors p-2 -m-2"
+                      >
+                        Sign In
+                      </button>
+                    </p>
+                  </div>
                 </motion.div>
               )}
 
@@ -185,78 +228,68 @@ export default function OnboardingPage() {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  className="space-y-8"
+                  className="space-y-8 flex-1 flex flex-col pt-8"
                 >
                   <button 
                     onClick={() => setStep(1)}
-                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors"
+                    className="self-start flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors py-2"
                   >
-                    <ArrowLeft size={16} /> Back to Roles
+                    <ArrowLeft size={16} /> Back
                   </button>
 
-                  <div className="space-y-6">
-                    <div className={cn(
-                      "w-20 h-20 rounded-[2rem] bg-gradient-to-br flex items-center justify-center mx-auto shadow-[0_20px_50px_-10px_rgba(255,184,0,0.3)]",
-                      currentRoleData.color
-                    )}>
-                      <currentRoleData.icon className={currentRoleData.id === 'customer' ? "text-primary-foreground" : "text-white"} size={40} />
+                  <div className="space-y-8 flex-1">
+                    <motion.div 
+                      layoutId={`role-icon-${currentRoleData.id}`}
+                      className={cn(
+                        "w-24 h-24 rounded-3xl bg-gradient-to-br flex items-center justify-center mx-auto shadow-2xl relative",
+                        currentRoleData.color,
+                        currentRoleData.shadow
+                      )}
+                    >
+                      <div className="absolute inset-0 bg-white/20 rounded-3xl blur-md" />
+                      <currentRoleData.icon className="text-white relative z-10" size={48} />
+                    </motion.div>
+
+                    <div className="text-center space-y-3">
+                      <h2 className="text-3xl font-black tracking-tighter uppercase italic leading-[1] text-white">Join as <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">{currentRoleData.title}</span></h2>
+                      <p className="text-neutral-400 text-sm font-medium px-4 leading-relaxed">{currentRoleData.description}</p>
                     </div>
 
-                    <div className="text-center space-y-2">
-                      <h2 className="text-4xl font-black tracking-tighter uppercase italic leading-[0.9]">{currentRoleData.title} Experience</h2>
-                      <p className="text-neutral-400 font-medium">{currentRoleData.description}</p>
-                    </div>
-
-                    <div className="bg-black/40 rounded-[2rem] p-6 border border-white/5 backdrop-blur-3xl space-y-4">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">What you get</h4>
-                      <div className="space-y-3">
+                    <div className="bg-[#0A0A0A]/80 rounded-3xl p-6 border border-white/5 backdrop-blur-3xl space-y-5">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-500">What's included</h4>
+                      <div className="space-y-4">
                         {currentRoleData.features.map((feature, i) => (
                           <motion.div
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.1 * i }}
                             key={i}
-                            className="flex items-center gap-3 text-neutral-200 text-sm font-bold tracking-tight"
+                            className="flex items-center gap-4 text-white text-[13px] font-bold"
                           >
-                            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                              <CheckCircle2 size={14} className="text-primary" />
+                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0 border border-white/5">
+                              <CheckCircle2 size={16} className="text-orange-500" />
                             </div>
                             {feature}
                           </motion.div>
                         ))}
                       </div>
                     </div>
-
-                    <div className="flex gap-4">
-                      <div className="flex-1 p-4 bg-black/40 rounded-[1.5rem] border border-white/5 backdrop-blur-3xl text-center">
-                        <ShieldCheck className="mx-auto mb-2 text-primary" size={24} />
-                        <p className="text-[10px] text-neutral-500 uppercase font-black tracking-wider">Secure</p>
-                        <p className="text-sm font-black text-white">Safe Access</p>
-                      </div>
-                      <div className="flex-1 p-4 bg-black/40 rounded-[1.5rem] border border-white/5 backdrop-blur-3xl text-center">
-                        <Clock className="mx-auto mb-2 text-zinc-400" size={24} />
-                        <p className="text-[10px] text-neutral-500 uppercase font-black tracking-wider">Live</p>
-                        <p className="text-sm font-black text-white">24/7 Support</p>
-                      </div>
-                    </div>
                   </div>
 
-                  <Button
-                    onClick={handleNext}
-                    className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-primary-foreground transition-all font-black uppercase tracking-widest text-lg gap-2 shadow-[0_10px_40px_-10px_rgba(255,184,0,0.5)]"
-                  >
-                    Join as {currentRoleData.title} <ArrowRight size={20} />
-                  </Button>
+                  <div className="pb-8">
+                    <Button
+                      onClick={handleNext}
+                      className="w-full h-14 rounded-2xl bg-white text-black hover:bg-neutral-200 font-black uppercase tracking-widest text-[13px] shadow-[0_0_40px_rgba(255,255,255,0.1)] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                    >
+                      Create Account <ArrowRight size={18} />
+                    </Button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
         )}
       </AnimatePresence>
-
-      <div className="absolute bottom-8 left-0 right-0 text-center opacity-30 pointer-events-none">
-        <p className="text-[10px] uppercase tracking-[0.3em] font-light">Fishing Panda Modern Delivery Infrastructure v2.1</p>
-      </div>
     </div>
   );
 }
