@@ -67,10 +67,10 @@ const NearbyPage = () => {
       const style = document.createElement('style');
       style.innerHTML = `
         .leaflet-marker-icon.pulsing-marker {
-          background: #ef4444;
+          background: #FFB800;
           border-radius: 50%;
           border: 2px solid white;
-          box-shadow: 0 0 0 rgba(239, 68, 68, 0.4);
+          box-shadow: 0 0 0 rgba(255, 184, 0, 0.4);
           animation: pulse 2s infinite;
         }
         .user-location-marker {
@@ -81,23 +81,25 @@ const NearbyPage = () => {
           animation: user-pulse 2s infinite;
         }
         @keyframes pulse {
-          0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-          70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+          0% { box-shadow: 0 0 0 0 rgba(255, 184, 0, 0.7); }
+          70% { box-shadow: 0 0 0 15px rgba(255, 184, 0, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(255, 184, 0, 0); }
         }
         @keyframes user-pulse {
           0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-          70% { box-shadow: 0 0 0 12px rgba(59, 130, 246, 0); }
+          70% { box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
           100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
         }
         .custom-popup .leaflet-popup-content-wrapper {
-          background: #1a1a1a;
+          background: rgba(10, 10, 10, 0.9);
+          backdrop-filter: blur(12px);
           color: white;
-          border-radius: 12px;
+          border-radius: 16px;
           border: 1px solid rgba(255,255,255,0.1);
+          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         .custom-popup .leaflet-popup-tip {
-          background: #1a1a1a;
+          background: rgba(10, 10, 10, 0.9);
         }
       `;
       document.head.appendChild(style);
@@ -128,7 +130,7 @@ const NearbyPage = () => {
         const isFastest = loc.badge === "⚡FASTEST";
         const customIcon = L.divIcon({
           className: `custom-div-icon ${isFastest ? 'pulsing-marker' : ''}`,
-          html: `<div style="width:12px;height:12px;background:#ef4444;border-radius:50%;border:2px solid white"></div>`,
+          html: `<div style="width:12px;height:12px;background:${isFastest ? '#FFB800' : '#444'};border-radius:50%;border:2px solid white"></div>`,
           iconSize: [16, 16],
           iconAnchor: [8, 8]
         });
@@ -233,7 +235,7 @@ const NearbyPage = () => {
               style={{ height: "320px" }}
             >
               <div className="absolute top-4 left-4 z-[1000] bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                 <span className="text-[10px] text-white font-bold tracking-widest uppercase">Live Kitchen Data</span>
               </div>
             </div>
@@ -342,7 +344,7 @@ const PickupNavigation = ({ location, onClose }: { location: any; onClose: () =>
       // Add Restaurant Marker
       const destIcon = L.divIcon({
         className: 'pulsing-marker',
-        html: `<div style="width:16px;height:16px;background:#ef4444;border-radius:50%;border:3px solid white;box-shadow:0 0 20px rgba(239,68,68,0.6)"></div>`,
+        html: `<div style="width:18px;height:18px;background:#FFB800;border-radius:50%;border:3px solid white;box-shadow:0 0 20px rgba(255,184,0,0.6)"></div>`,
         iconSize: [20, 20],
         iconAnchor: [10, 10]
       });
@@ -389,19 +391,19 @@ const PickupNavigation = ({ location, onClose }: { location: any; onClose: () =>
                 }
                 
                 routeLayerRef.current = L.polyline(coords, {
-                  color: '#ef4444',
+                  color: '#FFB800',
                   weight: 6,
-                  opacity: 0.8,
+                  opacity: 0.9,
                   lineJoin: 'round',
-                  dashArray: '1, 12',
+                  dashArray: '1, 14',
                   dashOffset: '0'
                 }).addTo(map);
 
                 // Add a glow effect behind the route
                 const glow = L.polyline(coords, {
-                  color: '#ef4444',
+                  color: '#FFB800',
                   weight: 12,
-                  opacity: 0.2,
+                  opacity: 0.25,
                   lineJoin: 'round'
                 }).addTo(map);
 
@@ -436,34 +438,34 @@ const PickupNavigation = ({ location, onClose }: { location: any; onClose: () =>
       <div ref={mapRef} className="flex-1 w-full" />
       
       {/* Bottom Info Card */}
-      <div className="absolute bottom-6 left-6 right-6 z-[2000] animate-in slide-in-from-bottom duration-500">
-        <div className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+      <div className="absolute bottom-6 left-6 right-6 z-[2000] animate-in slide-in-from-bottom duration-700">
+        <div className="bg-black/40 backdrop-blur-[40px] border border-white/10 rounded-[2rem] p-6 shadow-2xl">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h4 className="text-white font-black text-xl">{location.name}</h4>
-              <p className="text-white/60 text-sm">{location.address}</p>
+              <h4 className="text-white font-black text-2xl tracking-tight">{location.name}</h4>
+              <p className="text-neutral-400 text-sm font-medium">{location.address}</p>
             </div>
-            <div className="bg-primary/20 text-primary px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest">
-              Live Pickup
+            <div className="bg-primary/20 text-primary px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest border border-primary/20">
+              Live Nav
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-              <span className="text-white/40 text-[10px] uppercase font-bold">Distance</span>
-              <p className="text-white text-lg font-black">{distance}</p>
+            <div className="bg-white/5 rounded-2xl p-4 border border-white/5 backdrop-blur-xl">
+              <span className="text-primary text-[10px] uppercase font-black tracking-widest">Distance</span>
+              <p className="text-white text-2xl font-black mt-1">{distance}</p>
             </div>
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-              <span className="text-white/40 text-[10px] uppercase font-bold">Est. Arrival</span>
-              <p className="text-white text-lg font-black">{eta}</p>
+            <div className="bg-white/5 rounded-2xl p-4 border border-white/5 backdrop-blur-xl">
+              <span className="text-primary text-[10px] uppercase font-black tracking-widest">Est. Arrival</span>
+              <p className="text-white text-2xl font-black mt-1">{eta}</p>
             </div>
           </div>
 
           <Button 
-            className="w-full mt-6 bg-white text-black hover:bg-white/90 h-14 rounded-2xl font-black text-lg shadow-xl shadow-white/5"
+            className="w-full mt-6 bg-primary hover:bg-primary/90 text-primary-foreground h-14 rounded-2xl font-black uppercase tracking-widest shadow-[0_5px_30px_-5px_rgba(255,184,0,0.4)]"
             onClick={onClose}
           >
-            I'm Arriving Later
+            End Navigation
           </Button>
         </div>
       </div>
