@@ -23,6 +23,17 @@ declare global {
         callback: (response: { reference: string }) => void;
       }) => { openIframe: () => void };
     };
+    FlutterwaveCheckout: (options: {
+      public_key: string;
+      tx_ref: string;
+      amount: number;
+      currency: string;
+      payment_options: string;
+      customer: { email: string; phone_number?: string; name?: string };
+      customizations: { title: string; description: string; logo: string };
+      callback: (data: { transaction_id: number; tx_ref: string; status: string }) => void;
+      onclose: () => void;
+    }) => void;
   }
 }
 
@@ -37,6 +48,17 @@ function loadPaystackScript(): Promise<void> {
   });
 }
 
+function loadFlutterwaveScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (window.FlutterwaveCheckout) return resolve();
+    const script = document.createElement("script");
+    script.src = "https://checkout.flutterwave.com/v3.js";
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Flutterwave"));
+    document.head.appendChild(script);
+  });
+}
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { items, updateQuantity, removeItem, subtotal, clearCart } = useCart();
@@ -44,7 +66,7 @@ const CheckoutPage = () => {
   const { fmt, currency, rate } = useCurrency();
   const { toast } = useToast();
 
-  const [paymentMethod, setPaymentMethod] = useState<"paystack" | "card">("paystack");
+  const [paymentMethod, setPaymentMethod] = useState<"paystack" | "flutterwave" | "card">("flutterwave");
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Worldwide shipping address fields
@@ -95,7 +117,7 @@ const CheckoutPage = () => {
         tip: "0.00",
         total: total.toFixed(2),
         currency: currency.code,
-        paymentMethod: "paystack",
+        paymentMethod: paymentMethod,
         shippingName: fullName,
         shippingPhone: phone,
         shippingAddress: addressLine,
@@ -129,49 +151,91 @@ const CheckoutPage = () => {
       const order = await createOrderMutation.mutateAsync();
 
       const [, config, init] = await Promise.all([
-        loadPaystackScript(),
-        api.get<{ publicKey: string }>("/payments/config"),
-        api.post<{ accessCode: string; reference: string }>("/payments/initialize", {
+        paymentMethod === "flutterwave" ? loadFlutterwaveScript() : loadPaystackScript(),
+        api.get<{ paystackPublicKey: string; flutterwavePublicKey: string }>("/payments/config"),
+        paymentMethod === "paystack" ? api.post<{ accessCode: string; reference: string }>("/payments/initialize", {
           orderId: order.id,
           email: user.email,
           amount: totalLocal.toFixed(2),
           currency: currency.code,
-        }),
+        }) : Promise.resolve({ accessCode: "", reference: `ORD-${order.id}-${Date.now()}` }),
       ]);
 
       setIsProcessing(false);
 
-      const handler = window.PaystackPop.setup({
-        key: config.publicKey,
-        email: user.email,
-        amount: Math.round(totalLocal * 100),
-        currency: currency.code,
-        ref: init.reference,
-        onClose: () => {
-          toast({ title: "Payment cancelled", description: "Your order was saved. Try again.", variant: "destructive" });
-        },
-        callback: (response: { reference: string }) => {
-          const verify = async () => {
-            setIsProcessing(true);
-            try {
-              await api.post("/payments/verify", {
-                reference: response.reference,
-                orderId: order.id,
-              });
-              clearCart();
-              toast({ title: "Order Confirmed!", description: "We have submitted your order to CJ Dropshipping for worldwide fulfillment." });
-              navigate(`/tracking/${order.id}`);
-            } catch {
-              toast({ title: "Payment verification failed", description: "Contact support with ref: " + response.reference, variant: "destructive" });
-            } finally {
-              setIsProcessing(false);
-            }
-          };
-          verify();
-        },
-      });
+      if (paymentMethod === "flutterwave") {
+        window.FlutterwaveCheckout({
+          public_key: config.flutterwavePublicKey || "dev_key", // Fallback for dev
+          tx_ref: init.reference,
+          amount: Math.round(totalLocal * 100) / 100, // Flutterwave takes normal amounts
+          currency: currency.code,
+          payment_options: "card, mobilemoneyghana, ussd",
+          customer: {
+            email: user.email,
+            phone_number: phone,
+            name: fullName,
+          },
+          customizations: {
+            title: "TRENDS Delivery",
+            description: "Payment for order",
+            logo: "https://i.imgur.com/your-logo.png", // Generic logo fallback
+          },
+          onclose: () => {
+            toast({ title: "Payment cancelled", description: "Your order was saved. Try again.", variant: "destructive" });
+          },
+          callback: (response) => {
+            const verify = async () => {
+              setIsProcessing(true);
+              try {
+                await api.post("/payments/flutterwave/verify", {
+                  transactionId: response.transaction_id,
+                  orderId: order.id,
+                });
+                clearCart();
+                toast({ title: "Order Confirmed!", description: "We have submitted your order to CJ Dropshipping for worldwide fulfillment." });
+                navigate(`/tracking/${order.id}`);
+              } catch {
+                toast({ title: "Payment verification failed", description: "Contact support with ref: " + response.transaction_id, variant: "destructive" });
+              } finally {
+                setIsProcessing(false);
+              }
+            };
+            verify();
+          },
+        });
+      } else {
+        const handler = window.PaystackPop.setup({
+          key: config.paystackPublicKey,
+          email: user.email,
+          amount: Math.round(totalLocal * 100),
+          currency: currency.code,
+          ref: init.reference,
+          onClose: () => {
+            toast({ title: "Payment cancelled", description: "Your order was saved. Try again.", variant: "destructive" });
+          },
+          callback: (response: { reference: string }) => {
+            const verify = async () => {
+              setIsProcessing(true);
+              try {
+                await api.post("/payments/verify", {
+                  reference: response.reference,
+                  orderId: order.id,
+                });
+                clearCart();
+                toast({ title: "Order Confirmed!", description: "We have submitted your order to CJ Dropshipping for worldwide fulfillment." });
+                navigate(`/tracking/${order.id}`);
+              } catch {
+                toast({ title: "Payment verification failed", description: "Contact support with ref: " + response.reference, variant: "destructive" });
+              } finally {
+                setIsProcessing(false);
+              }
+            };
+            verify();
+          },
+        });
 
-      handler.openIframe();
+        handler.openIframe();
+      }
     } catch (err: any) {
       setIsProcessing(false);
       toast({ title: "Order failed", description: err.message, variant: "destructive" });
@@ -385,8 +449,8 @@ const CheckoutPage = () => {
             <h2 className="text-xs font-black uppercase tracking-widest text-[#222] mb-3">Select Payment Provider</h2>
             <div className="space-y-2">
               {[
-                { key: "paystack" as const, label: "Paystack Checkout", sub: "Pay securely via Mobile Money, Cards & Transfers", icon: Smartphone },
-                { key: "card" as const, label: "Debit / Credit Card", sub: "Visa, Mastercard, AMEX", icon: CreditCard },
+                { key: "flutterwave" as const, label: "Flutterwave (Intl)", sub: "Recommended for Worldwide Payments (Cards, Apple Pay, etc)", icon: Globe },
+                { key: "paystack" as const, label: "Paystack (Local)", sub: "Pay securely via Mobile Money, Cards & Transfers", icon: Smartphone },
               ].map(({ key, label, sub, icon: Icon }) => (
                 <button
                   key={key}
@@ -410,7 +474,7 @@ const CheckoutPage = () => {
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-[#888] mt-2.5 px-1 leading-normal font-semibold">All transaction tokens are parsed and fully encrypted. Paystack supports local network options like MTN, Telecel, AT Money, and global VISA cards.</p>
+            <p className="text-[10px] text-[#888] mt-2.5 px-1 leading-normal font-semibold">All transaction tokens are parsed and fully encrypted. Flutterwave is recommended for global cards, while Paystack supports local network options like MTN, Telecel, AT Money.</p>
           </div>
 
           {/* Receipt Costs Summary Box */}

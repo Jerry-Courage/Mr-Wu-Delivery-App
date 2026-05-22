@@ -126568,7 +126568,10 @@ router2.patch("/orders/:id/customer-location", auth2, async (req, res) => {
   res.json(order);
 });
 router2.get("/payments/config", (_req, res) => {
-  res.json({ publicKey: process.env.PAYSTACK_PUBLIC_KEY || "" });
+  res.json({
+    paystackPublicKey: process.env.PAYSTACK_PUBLIC_KEY || "",
+    flutterwavePublicKey: process.env.FLUTTERWAVE_PUBLIC_KEY || ""
+  });
 });
 router2.post("/payments/initialize", auth2, async (req, res) => {
   const { orderId, email, amount, currency } = req.body;
@@ -126636,6 +126639,37 @@ router2.post("/payments/verify", auth2, async (req, res) => {
     res.json({ success: true, reference, order });
   } catch (err) {
     console.error("Paystack verify error:", err);
+    res.status(500).json({ error: "Payment verification failed" });
+  }
+});
+router2.post("/payments/flutterwave/verify", auth2, async (req, res) => {
+  const { transactionId, orderId } = req.body;
+  if (!transactionId || !orderId) {
+    return res.status(400).json({ error: "transactionId and orderId required" });
+  }
+  const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
+  if (!FLUTTERWAVE_SECRET_KEY) {
+    return res.status(500).json({ error: "Flutterwave not configured" });
+  }
+  try {
+    const response = await fetch(`https://api.flutterwave.com/v3/transactions/${transactionId}/verify`, {
+      headers: { Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}` }
+    });
+    const data = await response.json();
+    if (data.status !== "success" || data.data?.status !== "successful") {
+      return res.status(400).json({ error: "Payment verification failed" });
+    }
+    const order = await storage.updatePaymentStatus(Number(orderId), "completed", String(transactionId));
+    await storage.updateOrderStatus(Number(orderId), "confirmed");
+    io2.to(`user:${order.userId}`).emit("order_status", { orderId: order.id, status: "confirmed" });
+    fulfillOrderWithCJ(Number(orderId)).then((result) => {
+      console.log(`Auto-fulfilled order ${orderId} with CJ Dropshipping:`, result);
+    }).catch((err) => {
+      console.error(`Failed to auto-fulfill order ${orderId} with CJ Dropshipping:`, err);
+    });
+    res.json({ success: true, reference: String(transactionId), order });
+  } catch (err) {
+    console.error("Flutterwave verify error:", err);
     res.status(500).json({ error: "Payment verification failed" });
   }
 });
