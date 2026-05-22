@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronLeft, Search, Send, Plus, ShoppingCart, Loader2, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
+import { useCurrency } from "@/context/CurrencyContext";
 import type { MenuItem as CartMenuItem } from "@/data/menuData";
 import { api } from "@/lib/api";
 import { useSEO } from "@/hooks/useSEO";
@@ -33,6 +34,7 @@ interface ChatMessage {
 const SearchPage = () => {
   const navigate = useNavigate();
   const { totalItems, subtotal, addItem } = useCart();
+  const { fmt } = useCurrency();
   const [query, setQuery] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -140,7 +142,7 @@ const SearchPage = () => {
                               <div className="flex-1 min-w-0">
                                 <h4 className="text-sm font-semibold text-foreground truncate">{item.name}</h4>
                                 <p className="text-xs text-muted-foreground">{item.category}</p>
-                                <p className="text-sm font-bold text-primary">GH₵{parseFloat(item.price).toFixed(2)}</p>
+                                <p className="text-sm font-bold text-primary">{fmt(parseFloat(item.price))}</p>
                               </div>
                               <button
                                 onClick={() => addItem({ id: String(item.id), name: item.name, price: parseFloat(item.price), image: item.imageUrl ?? "", description: item.description, category: item.category } as CartMenuItem)}
@@ -172,7 +174,7 @@ const SearchPage = () => {
               </div>
               <div>
                 <p className="text-xs opacity-70">Subtotal</p>
-                <p className="font-bold">GH₵{subtotal.toFixed(2)}</p>
+                <p className="font-bold">{fmt(subtotal)}</p>
               </div>
             </div>
             <button onClick={() => navigate("/checkout")} className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-xl text-sm">View Cart</button>

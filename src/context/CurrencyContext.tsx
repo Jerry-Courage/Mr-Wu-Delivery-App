@@ -14,6 +14,18 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined
 const RATE_CACHE_KEY = "trends_fx_rate";
 const RATE_CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
+// Hardcoded fallback rates in case adblockers or network errors block the free APIs
+const FALLBACK_RATES: Record<string, number> = {
+  "GHS": 14.50, // Approx 14.5 Cedi to 1 USD
+  "NGN": 1450.0,
+  "KES": 130.0,
+  "ZAR": 18.5,
+  "EUR": 0.92,
+  "GBP": 0.79,
+  "CAD": 1.36,
+  "AUD": 1.50,
+};
+
 function getCachedRate(currencyCode: string): number | null {
   try {
     const raw = sessionStorage.getItem(RATE_CACHE_KEY);
@@ -73,8 +85,10 @@ export const CurrencyProvider = ({ children }: { children: React.ReactNode }) =>
         }
       })
       .catch(() => {
-        // If both fail, keep rate = 1 (show USD prices)
-        console.warn("Exchange rate fetch failed, showing USD prices");
+        console.warn("Exchange rate fetch failed, using fallback rate if available");
+        if (FALLBACK_RATES[currency.code]) {
+          setRate(FALLBACK_RATES[currency.code]);
+        }
       })
       .finally(() => setRateLoading(false));
   }, [currency.code]);

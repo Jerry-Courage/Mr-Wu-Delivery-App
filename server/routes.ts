@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { roles } from "../shared/schema";
 import { z } from "zod";
 import { getRecommendations, getOrderETA, getWarehouseSummary, getAdminInsights, searchMenu, getSupportResponse } from "./ai";
+import { fulfillOrderWithCJ } from "./cj-routes";
 import { io } from "./index";
 import multer from "multer";
 import path from "path";
@@ -269,6 +270,13 @@ const createOrderSchema = z.object({
   total: z.string(),
   paymentMethod: z.string(),
   notes: z.string().optional(),
+  shippingName: z.string().optional(),
+  shippingPhone: z.string().optional(),
+  shippingAddress: z.string().optional(),
+  shippingCity: z.string().optional(),
+  shippingProvince: z.string().optional(),
+  shippingZip: z.string().optional(),
+  shippingCountry: z.string().optional(),
   items: z.array(z.object({
     menuItemId: z.number().optional(),
     name: z.string(),
@@ -338,7 +346,7 @@ router.get("/payments/config", (_req, res) => {
 });
 
 router.post("/payments/initialize", auth, async (req: AuthRequest, res) => {
-  const { orderId, email, amount } = req.body;
+  const { orderId, email, amount, currency } = req.body;
   if (!orderId || !email || !amount) {
     return res.status(400).json({ error: "orderId, email, and amount required" });
   }
@@ -361,7 +369,7 @@ router.post("/payments/initialize", auth, async (req: AuthRequest, res) => {
         body: JSON.stringify({
           email,
           amount: amountInPesewas,
-          currency: "GHS",
+          currency: currency || "GHS",
           metadata: { orderId, custom_fields: [{ display_name: "Order ID", variable_name: "order_id", value: String(orderId) }] },
         }),
       });
@@ -411,6 +419,13 @@ router.post("/payments/verify", auth, async (req: AuthRequest, res) => {
     // Auto-advance order status to confirmed
     await storage.updateOrderStatus(Number(orderId), "confirmed");
     io.to(`user:${order.userId}`).emit("order_status", { orderId: order.id, status: "confirmed" });
+
+    // Auto-trigger CJ fulfillment in the background
+    fulfillOrderWithCJ(Number(orderId)).then(result => {
+      console.log(`Auto-fulfilled order ${orderId} with CJ Dropshipping:`, result);
+    }).catch(err => {
+      console.error(`Failed to auto-fulfill order ${orderId} with CJ Dropshipping:`, err);
+    });
 
     res.json({ success: true, reference, order });
   } catch (err) {

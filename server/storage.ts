@@ -56,6 +56,13 @@ export interface IStorage {
     total: string;
     paymentMethod: string;
     notes?: string;
+    shippingName?: string;
+    shippingPhone?: string;
+    shippingAddress?: string;
+    shippingCity?: string;
+    shippingProvince?: string;
+    shippingZip?: string;
+    shippingCountry?: string;
     items: { menuItemId?: number; name: string; price: string; quantity: number; extras?: string[]; specialInstructions?: string }[];
   }): Promise<Order>;
   getOrderById(id: number): Promise<(Order & { items: OrderItem[] }) | null>;
@@ -251,6 +258,13 @@ export class Storage implements IStorage {
     total: string;
     paymentMethod: string;
     notes?: string;
+    shippingName?: string;
+    shippingPhone?: string;
+    shippingAddress?: string;
+    shippingCity?: string;
+    shippingProvince?: string;
+    shippingZip?: string;
+    shippingCountry?: string;
     items: { menuItemId?: number; name: string; price: string; quantity: number; extras?: string[]; specialInstructions?: string }[];
   }): Promise<Order> {
     const now = new Date();
@@ -264,6 +278,13 @@ export class Storage implements IStorage {
       total: data.total,
       paymentMethod: data.paymentMethod,
       notes: data.notes,
+      shippingName: data.shippingName,
+      shippingPhone: data.shippingPhone,
+      shippingAddress: data.shippingAddress,
+      shippingCity: data.shippingCity,
+      shippingProvince: data.shippingProvince,
+      shippingZip: data.shippingZip,
+      shippingCountry: data.shippingCountry,
       status: "pending",
       createdAt: now,
       updatedAt: now,

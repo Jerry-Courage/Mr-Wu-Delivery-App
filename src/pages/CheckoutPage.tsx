@@ -96,6 +96,13 @@ const CheckoutPage = () => {
         total: total.toFixed(2),
         currency: currency.code,
         paymentMethod: "paystack",
+        shippingName: fullName,
+        shippingPhone: phone,
+        shippingAddress: addressLine,
+        shippingCity: city,
+        shippingProvince: province,
+        shippingZip: zip,
+        shippingCountry: country,
         items: items.map(({ item, quantity }) => ({
           menuItemId: Number(item.id),
           name: item.name,
@@ -128,6 +135,7 @@ const CheckoutPage = () => {
           orderId: order.id,
           email: user.email,
           amount: totalLocal.toFixed(2),
+          currency: currency.code,
         }),
       ]);
 
@@ -137,7 +145,7 @@ const CheckoutPage = () => {
         key: config.publicKey,
         email: user.email,
         amount: Math.round(totalLocal * 100),
-        currency: "GHS",
+        currency: currency.code,
         ref: init.reference,
         onClose: () => {
           toast({ title: "Payment cancelled", description: "Your order was saved. Try again.", variant: "destructive" });

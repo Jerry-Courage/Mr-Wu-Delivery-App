@@ -73,6 +73,13 @@ export const orders = sqliteTable("orders", {
   customerLat: real("customer_lat"),
   customerLng: real("customer_lng"),
   notes: text("notes"),
+  // Distinct shipping address fields
+  shippingName: text("shipping_name"),
+  shippingPhone: text("shipping_phone"),
+  shippingAddress: text("shipping_address"),
+  shippingCity: text("shipping_city"),
+  shippingProvince: text("shipping_province"),
+  shippingZip: text("shipping_zip"),
   // CJ Dropshipping fulfillment fields
   cjOrderId: text("cj_order_id"),       // CJ's internal order ID
   cjOrderNum: text("cj_order_num"),     // CJ's order number
@@ -123,6 +130,13 @@ export const insertOrderSchema = z.object({
   total: z.string(),
   paymentMethod: z.string(),
   notes: z.string().optional(),
+  shippingName: z.string().optional(),
+  shippingPhone: z.string().optional(),
+  shippingAddress: z.string().optional(),
+  shippingCity: z.string().optional(),
+  shippingProvince: z.string().optional(),
+  shippingZip: z.string().optional(),
+  shippingCountry: z.string().optional(),
 });
 
 export const insertOrderItemSchema = z.object({

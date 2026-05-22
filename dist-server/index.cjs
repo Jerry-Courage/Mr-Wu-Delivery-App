@@ -104414,14 +104414,14 @@ var init_is_redirect = __esm({
 });
 
 // node_modules/node-fetch/src/response.js
-var INTERNALS2, Response;
+var INTERNALS2, Response2;
 var init_response = __esm({
   "node_modules/node-fetch/src/response.js"() {
     init_headers();
     init_body();
     init_is_redirect();
     INTERNALS2 = Symbol("Response internals");
-    Response = class _Response extends Body {
+    Response2 = class _Response extends Body {
       constructor(body = null, options = {}) {
         super(body, options);
         const status = options.status != null ? options.status : 200;
@@ -104526,7 +104526,7 @@ var init_response = __esm({
         return "Response";
       }
     };
-    Object.defineProperties(Response.prototype, {
+    Object.defineProperties(Response2.prototype, {
       type: { enumerable: true },
       url: { enumerable: true },
       status: { enumerable: true },
@@ -104700,7 +104700,7 @@ var init_referrer = __esm({
 });
 
 // node_modules/node-fetch/src/request.js
-var import_node_url, import_node_util3, INTERNALS3, isRequest, doBadDataWarn, Request, getNodeRequestOptions;
+var import_node_url, import_node_util3, INTERNALS3, isRequest, doBadDataWarn, Request2, getNodeRequestOptions;
 var init_request = __esm({
   "node_modules/node-fetch/src/request.js"() {
     import_node_url = require("node:url");
@@ -104720,7 +104720,7 @@ var init_request = __esm({
       ".data is not a valid RequestInit property, use .body instead",
       "https://github.com/node-fetch/node-fetch/issues/1000 (request)"
     );
-    Request = class _Request extends Body {
+    Request2 = class _Request extends Body {
       constructor(input, init = {}) {
         let parsedURL;
         if (isRequest(input)) {
@@ -104835,7 +104835,7 @@ var init_request = __esm({
         return "Request";
       }
     };
-    Object.defineProperties(Request.prototype, {
+    Object.defineProperties(Request2.prototype, {
       method: { enumerable: true },
       url: { enumerable: true },
       headers: { enumerable: true },
@@ -104926,8 +104926,8 @@ __export(src_exports, {
   File: () => file_default,
   FormData: () => FormData2,
   Headers: () => Headers2,
-  Request: () => Request,
-  Response: () => Response,
+  Request: () => Request2,
+  Response: () => Response2,
   blobFrom: () => blobFrom,
   blobFromSync: () => blobFromSync,
   default: () => fetch2,
@@ -104937,14 +104937,14 @@ __export(src_exports, {
 });
 async function fetch2(url, options_) {
   return new Promise((resolve, reject) => {
-    const request = new Request(url, options_);
+    const request = new Request2(url, options_);
     const { parsedURL, options } = getNodeRequestOptions(request);
     if (!supportedSchemas.has(parsedURL.protocol)) {
       throw new TypeError(`node-fetch cannot load ${url}. URL scheme "${parsedURL.protocol.replace(/:$/, "")}" is not supported.`);
     }
     if (parsedURL.protocol === "data:") {
       const data = dist_default(request.url);
-      const response2 = new Response(data, { headers: { "Content-Type": data.typeFull } });
+      const response2 = new Response2(data, { headers: { "Content-Type": data.typeFull } });
       resolve(response2);
       return;
     }
@@ -105067,7 +105067,7 @@ async function fetch2(url, options_) {
             if (responseReferrerPolicy) {
               requestOptions.referrerPolicy = responseReferrerPolicy;
             }
-            resolve(fetch2(new Request(locationURL, requestOptions)));
+            resolve(fetch2(new Request2(locationURL, requestOptions)));
             finalize();
             return;
           }
@@ -105099,7 +105099,7 @@ async function fetch2(url, options_) {
       };
       const codings = headers.get("Content-Encoding");
       if (!request.compress || request.method === "HEAD" || codings === null || response_.statusCode === 204 || response_.statusCode === 304) {
-        response = new Response(body, responseOptions);
+        response = new Response2(body, responseOptions);
         resolve(response);
         return;
       }
@@ -105113,7 +105113,7 @@ async function fetch2(url, options_) {
             reject(error);
           }
         });
-        response = new Response(body, responseOptions);
+        response = new Response2(body, responseOptions);
         resolve(response);
         return;
       }
@@ -105137,12 +105137,12 @@ async function fetch2(url, options_) {
               }
             });
           }
-          response = new Response(body, responseOptions);
+          response = new Response2(body, responseOptions);
           resolve(response);
         });
         raw.once("end", () => {
           if (!response) {
-            response = new Response(body, responseOptions);
+            response = new Response2(body, responseOptions);
             resolve(response);
           }
         });
@@ -105154,11 +105154,11 @@ async function fetch2(url, options_) {
             reject(error);
           }
         });
-        response = new Response(body, responseOptions);
+        response = new Response2(body, responseOptions);
         resolve(response);
         return;
       }
-      response = new Response(body, responseOptions);
+      response = new Response2(body, responseOptions);
       resolve(response);
     });
     writeToStream(request_, request).catch(reject);
@@ -122149,6 +122149,13 @@ var orders = sqliteTable("orders", {
   customerLat: real("customer_lat"),
   customerLng: real("customer_lng"),
   notes: text("notes"),
+  // Distinct shipping address fields
+  shippingName: text("shipping_name"),
+  shippingPhone: text("shipping_phone"),
+  shippingAddress: text("shipping_address"),
+  shippingCity: text("shipping_city"),
+  shippingProvince: text("shipping_province"),
+  shippingZip: text("shipping_zip"),
   // CJ Dropshipping fulfillment fields
   cjOrderId: text("cj_order_id"),
   // CJ's internal order ID
@@ -122199,7 +122206,14 @@ var insertOrderSchema = external_exports.object({
   tip: external_exports.string(),
   total: external_exports.string(),
   paymentMethod: external_exports.string(),
-  notes: external_exports.string().optional()
+  notes: external_exports.string().optional(),
+  shippingName: external_exports.string().optional(),
+  shippingPhone: external_exports.string().optional(),
+  shippingAddress: external_exports.string().optional(),
+  shippingCity: external_exports.string().optional(),
+  shippingProvince: external_exports.string().optional(),
+  shippingZip: external_exports.string().optional(),
+  shippingCountry: external_exports.string().optional()
 });
 var insertOrderItemSchema = external_exports.object({
   orderId: external_exports.number().int(),
@@ -123967,8 +123981,8 @@ var bcryptjs_default = {
 };
 
 // server/routes.ts
-var import_express = __toESM(require_express2(), 1);
-var import_jsonwebtoken = __toESM(require_jsonwebtoken(), 1);
+var import_express2 = __toESM(require_express2(), 1);
+var import_jsonwebtoken2 = __toESM(require_jsonwebtoken(), 1);
 
 // node_modules/express-rate-limit/dist/index.mjs
 var import_node_net = require("node:net");
@@ -125008,6 +125022,13 @@ var Storage = class {
       total: data.total,
       paymentMethod: data.paymentMethod,
       notes: data.notes,
+      shippingName: data.shippingName,
+      shippingPhone: data.shippingPhone,
+      shippingAddress: data.shippingAddress,
+      shippingCity: data.shippingCity,
+      shippingProvince: data.shippingProvince,
+      shippingZip: data.shippingZip,
+      shippingCountry: data.shippingCountry,
       status: "pending",
       createdAt: now,
       updatedAt: now
@@ -125463,661 +125484,9 @@ ${menuText}`;
   ]);
 }
 
-// server/routes.ts
-var import_multer = __toESM(require_multer(), 1);
-var import_path2 = __toESM(require("path"), 1);
-var import_google_auth_library = __toESM(require_src5(), 1);
-var storageConfig = import_multer.default.diskStorage({
-  destination: "public/uploads",
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + "-" + uniqueSuffix + import_path2.default.extname(file.originalname));
-  }
-});
-var upload = (0, import_multer.default)({
-  storage: storageConfig,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  // 5MB limit
-  fileFilter: (_req, file, cb) => {
-    const allowed = ["image/jpeg", "image/png", "image/webp"];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Invalid file type. Only JPEG, PNG and WEBP are allowed."));
-  }
-});
-var aiLimiter = rate_limit_default({
-  windowMs: 60 * 1e3,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many AI requests, please try again in a minute." }
-});
-var router = (0, import_express.Router)();
-var JWT_SECRET = process.env.JWT_SECRET || "trends-electronics-secret-key-change-in-production";
-var GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
-var client = new import_google_auth_library.OAuth2Client(GOOGLE_CLIENT_ID);
-function auth(req, res, next) {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
-  try {
-    const decoded = import_jsonwebtoken.default.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch {
-    res.status(401).json({ error: "Invalid token" });
-  }
-}
-function requireRole(...roles3) {
-  return (req, res, next) => {
-    if (!req.user || !roles3.includes(req.user.role)) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-    next();
-  };
-}
-var registerSchema = external_exports.object({
-  email: external_exports.string().email(),
-  password: external_exports.string().min(6),
-  name: external_exports.string().min(1),
-  phone: external_exports.string().optional(),
-  role: external_exports.enum(roles).optional(),
-  address: external_exports.string().optional(),
-  adminSecret: external_exports.string().optional()
-});
-router.post("/auth/check-email", async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: "Email is required" });
-  try {
-    const user = await storage.getUserByEmail(email.toLowerCase());
-    res.json({ exists: !!user });
-  } catch (err) {
-    res.json({ exists: false });
-  }
-});
-router.post("/auth/register", async (req, res) => {
-  const result = registerSchema.safeParse(req.body);
-  if (!result.success) return res.status(400).json({ error: result.error.flatten() });
-  const { role, adminSecret, email } = result.data;
-  const lowerEmail = email.toLowerCase();
-  if (role === "admin") {
-    return res.status(403).json({ error: "Admin accounts are managed by the super admin" });
-  }
-  if (lowerEmail === "admin@trends.com") {
-    return res.status(403).json({ error: "Unauthorized email address" });
-  }
-  const existing = await storage.getUserByEmail(email);
-  if (existing) return res.status(409).json({ error: "Email already in use" });
-  const { adminSecret: _, ...userData } = result.data;
-  const user = await storage.createUser(userData);
-  const token = import_jsonwebtoken.default.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
-  res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone, address: user.address } });
-});
-router.post("/auth/google", async (req, res) => {
-  const { credential } = req.body;
-  if (!credential) return res.status(400).json({ error: "Google credential required" });
-  try {
-    const ticket = await client.verifyIdToken({
-      idToken: credential,
-      audience: GOOGLE_CLIENT_ID
-    });
-    const payload = ticket.getPayload();
-    if (!payload || !payload.email) return res.status(400).json({ error: "Invalid Google token" });
-    const { email, name: name2, sub: googleId } = payload;
-    let user = await storage.getUserByGoogleId(googleId);
-    if (!user) {
-      user = await storage.getUserByEmail(email);
-      if (user) {
-        user = await storage.updateUserProfile(user.id, { name: name2 });
-      } else {
-        user = await storage.createUser({
-          email,
-          name: name2 || email.split("@")[0],
-          googleId,
-          role: "customer"
-        });
-      }
-    }
-    const token = import_jsonwebtoken.default.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone, address: user.address } });
-  } catch (err) {
-    console.error("Google Auth error:", err);
-    res.status(401).json({ error: "Google authentication failed" });
-  }
-});
-router.post("/auth/login", async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: "Email and password required" });
-  const user = await storage.getUserByEmail(email);
-  if (!user) return res.status(401).json({ error: "Invalid credentials" });
-  const valid = await storage.validatePassword(user, password);
-  if (!valid) return res.status(401).json({ error: "Invalid credentials" });
-  const token = import_jsonwebtoken.default.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
-  res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone, address: user.address } });
-});
-router.get("/auth/me", auth, async (req, res) => {
-  const user = await storage.getUserById(req.user.id);
-  if (!user) return res.status(404).json({ error: "User not found" });
-  res.json({
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    phone: user.phone,
-    address: user.address,
-    points: user.points,
-    interests: user.interests
-  });
-});
-router.patch("/auth/profile", auth, async (req, res) => {
-  const { name: name2, phone, address, interests } = req.body;
-  const user = await storage.updateUserProfile(req.user.id, { name: name2, phone, address, interests });
-  if (!user) return res.status(404).json({ error: "User not found" });
-  res.json({
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    phone: user.phone,
-    address: user.address,
-    points: user.points,
-    interests: user.interests
-  });
-});
-router.get("/menu", async (req, res) => {
-  const limit = req.query.limit ? parseInt(req.query.limit) : void 0;
-  const page = req.query.page ? parseInt(req.query.page) : void 0;
-  const cat = req.query.cat;
-  const search = req.query.q;
-  const localOnly = req.query.localOnly === "true";
-  if (page && limit) {
-    const result = await storage.getPaginatedMenuItems(page, limit, cat, search, localOnly);
-    return res.json(result);
-  }
-  const items = await storage.getMenuItems();
-  let filtered = cat ? items.filter((i2) => i2.category === cat) : items;
-  if (search) {
-    const s2 = search.toLowerCase();
-    filtered = filtered.filter((i2) => i2.name.toLowerCase().includes(s2) || i2.description && i2.description.toLowerCase().includes(s2));
-  }
-  res.json(filtered);
-});
-router.post("/menu/:id/rate", async (req, res) => {
-  const { rating } = req.body;
-  if (!rating || rating < 1 || rating > 5) {
-    return res.status(400).json({ error: "Invalid rating. Must be between 1 and 5." });
-  }
-  try {
-    const item = await storage.addRating(Number(req.params.id), Number(rating));
-    res.json(item);
-  } catch (err) {
-    res.status(404).json({ error: "Product not found" });
-  }
-});
-router.get("/menu/:id", async (req, res) => {
-  const item = await storage.getMenuItem(Number(req.params.id));
-  if (!item) return res.status(404).json({ error: "Not found" });
-  res.json(item);
-});
-router.patch("/admin/menu-items/:id/image", auth, requireRole("warehouse"), async (req, res) => {
-  const { imageUrl } = req.body;
-  if (!imageUrl) return res.status(400).json({ error: "imageUrl required" });
-  const item = await storage.updateMenuItemImage(Number(req.params.id), imageUrl);
-  res.json(item);
-});
-router.post("/upload", auth, requireRole("admin", "warehouse"), upload.single("image"), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-  res.json({ url: `/uploads/${req.file.filename}` });
-});
-var createOrderSchema = external_exports.object({
-  deliveryAddress: external_exports.string().min(1),
-  subtotal: external_exports.string(),
-  deliveryFee: external_exports.string(),
-  tax: external_exports.string(),
-  tip: external_exports.string(),
-  total: external_exports.string(),
-  paymentMethod: external_exports.string(),
-  notes: external_exports.string().optional(),
-  items: external_exports.array(external_exports.object({
-    menuItemId: external_exports.number().optional(),
-    name: external_exports.string(),
-    price: external_exports.string(),
-    quantity: external_exports.number().min(1),
-    extras: external_exports.array(external_exports.string()).optional(),
-    specialInstructions: external_exports.string().optional()
-  })).min(1)
-});
-router.post("/orders", auth, requireRole("customer"), async (req, res) => {
-  const result = createOrderSchema.safeParse(req.body);
-  if (!result.success) return res.status(400).json({ error: result.error.flatten() });
-  const order = await storage.createOrder({ userId: req.user.id, ...result.data });
-  io2.to("warehouse").emit("new_order", { orderId: order.id, customerName: req.user.email });
-  res.status(201).json(order);
-});
-router.get("/orders/my", auth, requireRole("customer"), async (req, res) => {
-  const userOrders = await storage.getOrdersByUser(req.user.id);
-  res.json(userOrders);
-});
-router.get("/orders/:id", auth, async (req, res) => {
-  const order = await storage.getOrderById(Number(req.params.id));
-  if (!order) return res.status(404).json({ error: "Not found" });
-  if (req.user.role === "customer" && order.userId !== req.user.id) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-  res.json(order);
-});
-router.patch("/orders/:id/location", auth, requireRole("courier", "admin"), async (req, res) => {
-  const { lat, lng } = req.body;
-  if (typeof lat !== "number" || typeof lng !== "number") {
-    return res.status(400).json({ error: "Invalid coordinates" });
-  }
-  const order = await storage.updateCourierLocation(Number(req.params.id), lat, lng);
-  io2.to(`order:${order.id}`).emit("courier:location_updated", { lat, lng });
-  res.json(order);
-});
-router.patch("/orders/:id/customer-location", auth, async (req, res) => {
-  const { lat, lng } = req.body;
-  if (typeof lat !== "number" || typeof lng !== "number") {
-    return res.status(400).json({ error: "Invalid coordinates" });
-  }
-  const order = await storage.updateCustomerLocation(Number(req.params.id), lat, lng);
-  res.json(order);
-});
-router.get("/payments/config", (_req, res) => {
-  res.json({ publicKey: process.env.PAYSTACK_PUBLIC_KEY || "" });
-});
-router.post("/payments/initialize", auth, async (req, res) => {
-  const { orderId, email, amount } = req.body;
-  if (!orderId || !email || !amount) {
-    return res.status(400).json({ error: "orderId, email, and amount required" });
-  }
-  const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-  if (!PAYSTACK_SECRET_KEY) {
-    return res.status(500).json({ error: "Paystack not configured" });
-  }
-  const amountInPesewas = Math.round(parseFloat(amount) * 100);
-  try {
-    const response = await fetch("https://api.paystack.co/transaction/initialize", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        email,
-        amount: amountInPesewas,
-        currency: "GHS",
-        metadata: { orderId, custom_fields: [{ display_name: "Order ID", variable_name: "order_id", value: String(orderId) }] }
-      })
-    });
-    if (!response.ok) {
-      console.warn("Paystack API error - using development fallback");
-      return res.json({ accessCode: "dev_access_code", reference: `dev_ref_${Date.now()}` });
-    }
-    const data = await response.json();
-    if (!data.status || !data.data) {
-      return res.status(400).json({ error: "Paystack initialization failed" });
-    }
-    res.json({ accessCode: data.data.access_code, reference: data.data.reference });
-  } catch (err) {
-    console.warn("Paystack init fetch failed - using development fallback:", err);
-    res.json({ accessCode: "dev_access_code", reference: `dev_ref_${Date.now()}` });
-  }
-});
-router.post("/payments/verify", auth, async (req, res) => {
-  const { reference, orderId } = req.body;
-  if (!reference || !orderId) {
-    return res.status(400).json({ error: "reference and orderId required" });
-  }
-  const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-  if (!PAYSTACK_SECRET_KEY) {
-    return res.status(500).json({ error: "Paystack not configured" });
-  }
-  try {
-    const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
-      headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` }
-    });
-    const data = await response.json();
-    if (!data.status || data.data?.status !== "success") {
-      return res.status(400).json({ error: "Payment verification failed" });
-    }
-    const order = await storage.updatePaymentStatus(Number(orderId), "completed", reference);
-    await storage.updateOrderStatus(Number(orderId), "confirmed");
-    io2.to(`user:${order.userId}`).emit("order_status", { orderId: order.id, status: "confirmed" });
-    res.json({ success: true, reference, order });
-  } catch (err) {
-    console.error("Paystack verify error:", err);
-    res.status(500).json({ error: "Payment verification failed" });
-  }
-});
-router.get("/management/orders", auth, requireRole("warehouse"), async (_req, res) => {
-  const allOrders = await storage.getAllOrders();
-  res.json(allOrders);
-});
-router.patch("/management/orders/:id/status", auth, requireRole("warehouse"), async (req, res) => {
-  const { status } = req.body;
-  const validStatuses = ["pending", "confirmed", "packaging", "ready", "assigned", "picked_up", "delivered", "cancelled"];
-  if (!validStatuses.includes(status)) return res.status(400).json({ error: "Invalid status" });
-  const order = await storage.updateOrderStatus(Number(req.params.id), status);
-  io2.to(`user:${order.userId}`).emit("order_status", { orderId: order.id, status });
-  res.json(order);
-});
-router.patch("/management/orders/:id/assign", auth, requireRole("warehouse"), async (req, res) => {
-  const { courierId } = req.body;
-  if (!courierId) return res.status(400).json({ error: "courierId required" });
-  const order = await storage.assignCourier(Number(req.params.id), Number(courierId));
-  io2.to(`courier:${courierId}`).emit("order_assigned", { orderId: order.id });
-  io2.to(`user:${order.userId}`).emit("order_status", { orderId: order.id, status: "assigned" });
-  res.json(order);
-});
-router.get("/management/couriers", auth, requireRole("warehouse"), async (_req, res) => {
-  const couriers = await storage.getAllCouriers();
-  res.json(couriers.map((r2) => ({ id: r2.id, name: r2.name, email: r2.email, phone: r2.phone })));
-});
-router.get("/courier/orders", auth, requireRole("courier"), async (req, res) => {
-  const courierOrders = await storage.getCourierOrders(req.user.id);
-  res.json(courierOrders);
-});
-router.patch("/courier/orders/:id/status", auth, requireRole("courier"), async (req, res) => {
-  const { status } = req.body;
-  const allowedStatuses = ["picked_up", "delivered"];
-  if (!allowedStatuses.includes(status)) return res.status(400).json({ error: "Invalid status for courier" });
-  const order = await storage.getOrderById(Number(req.params.id));
-  if (!order) return res.status(404).json({ error: "Order not found" });
-  if (order.courierId !== req.user.id) return res.status(403).json({ error: "Not your order" });
-  const updated = await storage.updateOrderStatus(Number(req.params.id), status);
-  io2.to(`user:${updated.userId}`).emit("order_status", { orderId: updated.id, status });
-  res.json(updated);
-});
-router.get("/ai/recommendations", aiLimiter, async (req, res) => {
-  try {
-    const menuItems2 = await storage.getMenuItems();
-    const { recentOrders, interests } = await (async () => {
-      const authHeader = req.headers.authorization;
-      if (!authHeader) return { recentOrders: [], interests: null };
-      const token = authHeader.split(" ")[1];
-      if (!token) return { recentOrders: [], interests: null };
-      try {
-        const decoded = import_jsonwebtoken.default.verify(token, process.env.JWT_SECRET || "fallback-secret");
-        const [orders2, user] = await Promise.all([
-          storage.getOrdersByUser(decoded.id),
-          storage.getUserById(decoded.id)
-        ]);
-        return { recentOrders: orders2, interests: user?.interests };
-      } catch {
-        return { recentOrders: [], interests: null };
-      }
-    })();
-    const hour = (/* @__PURE__ */ new Date()).getHours();
-    const timeOfDay = hour < 11 ? "morning" : hour < 15 ? "afternoon" : hour < 21 ? "evening" : "night";
-    const simplified = menuItems2.map((m2) => ({
-      id: m2.id,
-      name: m2.name,
-      category: m2.category,
-      price: m2.price,
-      tags: m2.tags ? JSON.parse(m2.tags) : []
-    }));
-    const recs = await getRecommendations(simplified, recentOrders, timeOfDay, interests);
-    res.json(recs);
-  } catch (err) {
-    console.error("AI recommendations error:", err);
-    res.json([]);
-  }
-});
-router.get("/ai/eta/:orderId", aiLimiter, auth, async (req, res) => {
-  try {
-    const order = await storage.getOrderById(Number(req.params.orderId));
-    if (!order) return res.status(404).json({ error: "Order not found" });
-    if (req.user.role === "customer" && order.userId !== req.user.id) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-    const eta = await getOrderETA(order.status, new Date(order.createdAt), order.items.length);
-    res.json(eta);
-  } catch (err) {
-    console.error("AI ETA error:", err);
-    res.json({ eta: "Usually ready in 15-20 min", details: "AI service temporarily unavailable" });
-  }
-});
-router.get("/ai/warehouse-summary", aiLimiter, auth, requireRole("warehouse"), async (_req, res) => {
-  try {
-    const allOrders = await storage.getAllOrders();
-    const simplified = allOrders.map((o) => ({
-      id: o.id,
-      status: o.status,
-      createdAt: new Date(o.createdAt),
-      items: o.items.map((i2) => ({ name: i2.name, quantity: i2.quantity }))
-    }));
-    const summary = await getWarehouseSummary(simplified);
-    res.json({ summary });
-  } catch (err) {
-    console.error("AI warehouse summary error:", err);
-    res.json({ summary: "Warehouse is busy, but running smoothly. Check new orders frequently." });
-  }
-});
-router.get("/admin/stats", auth, requireRole("admin"), async (req, res) => {
-  const days = Number(req.query.days) || 30;
-  const stats = await storage.getAdminStats(days);
-  res.json(stats);
-});
-router.get("/admin/orders", auth, requireRole("admin"), async (_req, res) => {
-  const allOrders = await storage.getAllOrders();
-  const enriched = await Promise.all(
-    allOrders.map(async (order) => {
-      const items = await Promise.all(
-        order.items.map(async (item) => {
-          if (item.menuItemId) {
-            const menuItem = await storage.getMenuItem(item.menuItemId);
-            return { ...item, cjCost: menuItem?.cjCost || null };
-          }
-          return { ...item, cjCost: null };
-        })
-      );
-      return { ...order, items };
-    })
-  );
-  res.json(enriched);
-});
-router.patch("/admin/orders/:id/status", auth, requireRole("admin"), async (req, res) => {
-  const { status } = req.body;
-  const validStatuses = ["pending", "confirmed", "packaging", "ready", "assigned", "picked_up", "delivered", "cancelled"];
-  if (!validStatuses.includes(status)) return res.status(400).json({ error: "Invalid status" });
-  const order = await storage.updateOrderStatus(Number(req.params.id), status);
-  io2.to(`user:${order.userId}`).emit("order_status", { orderId: order.id, status });
-  res.json(order);
-});
-router.patch("/orders/:id/cancel", auth, async (req, res) => {
-  const order = await storage.getOrderById(Number(req.params.id));
-  if (!order) return res.status(404).json({ error: "Order not found" });
-  if (req.user.role === "customer") {
-    if (order.userId !== req.user.id) return res.status(403).json({ error: "Forbidden" });
-    if (!["pending", "confirmed"].includes(order.status)) {
-      return res.status(400).json({ error: "Order can no longer be cancelled" });
-    }
-  }
-  const updated = await storage.updateOrderStatus(Number(req.params.id), "cancelled");
-  io2.to(`user:${updated.userId}`).emit("order_status", { orderId: updated.id, status: "cancelled" });
-  res.json(updated);
-});
-router.get("/admin/menu-items", auth, requireRole("admin", "warehouse"), async (_req, res) => {
-  const items = await storage.getMenuItems(true);
-  res.json(items);
-});
-router.post("/admin/menu-items", auth, requireRole("admin"), async (req, res) => {
-  const item = await storage.createMenuItem(req.body);
-  res.status(201).json(item);
-});
-router.patch("/admin/menu-items/:id", auth, requireRole("admin", "warehouse"), async (req, res) => {
-  const item = await storage.updateMenuItem(Number(req.params.id), req.body);
-  res.json(item);
-});
-router.delete("/admin/menu-items/:id", auth, requireRole("admin"), async (req, res) => {
-  await storage.deleteMenuItem(Number(req.params.id));
-  res.sendStatus(204);
-});
-router.post("/ai/search", aiLimiter, async (req, res) => {
-  try {
-    const { query } = req.body;
-    if (!query || typeof query !== "string" || query.trim().length === 0) {
-      return res.status(400).json({ error: "query is required" });
-    }
-    const items = await storage.getMenuItems();
-    const simplified = items.map((m2) => ({
-      id: m2.id,
-      name: m2.name,
-      category: m2.category,
-      price: m2.price,
-      description: m2.description,
-      tags: m2.tags ? JSON.parse(m2.tags) : []
-    }));
-    try {
-      const result = await searchMenu(query.trim(), simplified);
-      const matchedItems = items.filter((i2) => result.itemIds.includes(i2.id));
-      res.json({ message: result.message, items: matchedItems });
-    } catch {
-      const q = query.trim().toLowerCase();
-      const matchedItems = items.filter((i2) => {
-        const tagsStr = i2.tags ? i2.tags.toLowerCase() : "";
-        return i2.name.toLowerCase().includes(q) || i2.description && i2.description.toLowerCase().includes(q) || i2.category && i2.category.toLowerCase().includes(q) || tagsStr.includes(q);
-      });
-      res.json({
-        message: matchedItems.length > 0 ? `Found ${matchedItems.length} item(s) matching "${query}".` : `No items found for "${query}". Try browsing the full menu!`,
-        items: matchedItems
-      });
-    }
-  } catch (err) {
-    console.error("AI search error:", err);
-    res.status(500).json({ error: "Search unavailable, please try again." });
-  }
-});
-router.post("/ai/support", aiLimiter, async (req, res) => {
-  try {
-    const { message, history } = req.body;
-    if (!message || typeof message !== "string") {
-      return res.status(400).json({ error: "message is required" });
-    }
-    const items = await storage.getMenuItems();
-    const simplified = items.map((m2) => ({
-      id: m2.id,
-      name: m2.name,
-      category: m2.category,
-      price: m2.price,
-      description: m2.description,
-      tags: m2.tags ? JSON.parse(m2.tags) : []
-    }));
-    const { user, activeOrders } = await (async () => {
-      const authHeader = req.headers.authorization;
-      if (!authHeader) return { user: null, activeOrders: [] };
-      const token = authHeader.split(" ")[1];
-      if (!token) return { user: null, activeOrders: [] };
-      try {
-        const decoded = import_jsonwebtoken.default.verify(token, JWT_SECRET);
-        const [userData, orders2] = await Promise.all([
-          storage.getUserById(decoded.id),
-          storage.getOrdersByUser(decoded.id)
-        ]);
-        const active = orders2.filter((o) => !["delivered", "cancelled"].includes(o.status));
-        return { user: userData, activeOrders: active };
-      } catch {
-        return { user: null, activeOrders: [] };
-      }
-    })();
-    const reply = await getSupportResponse(message, history || [], simplified, user?.interests, activeOrders);
-    res.json({ reply });
-  } catch (err) {
-    console.error("### AI_SUPPORT_ROUTE_ERROR:", err);
-    res.json({ reply: "I'm here to help! Please contact us at support@trends.com or call our hotline for urgent issues." });
-  }
-});
-router.post("/ai/admin-insights", aiLimiter, auth, requireRole("admin"), async (req, res) => {
-  try {
-    const days = Number(req.body.days) || 30;
-    const stats = await storage.getAdminStats(days);
-    try {
-      const insights = await getAdminInsights(stats);
-      res.json({ insights });
-    } catch {
-      res.json({
-        insights: `Over the past ${days} days, the store recorded ${stats.totalOrders} orders totalling GH\u20B5${stats.totalRevenue.toFixed(2)}. ${stats.popularItems.length > 0 ? `Top seller: ${stats.popularItems[0].name} (${stats.popularItems[0].count} sold).` : ""} Focus on maintaining quality and delivery speed to sustain growth.`
-      });
-    }
-  } catch (err) {
-    console.error("Admin insights error:", err);
-    res.status(500).json({ error: "Unable to load insights" });
-  }
-});
-router.get("/admin/staff", auth, requireRole("admin"), async (_req, res) => {
-  const staff = await storage.getUsersByRole("warehouse");
-  res.json(staff.map((s2) => ({ id: s2.id, email: s2.email, name: s2.name, createdAt: s2.createdAt })));
-});
-router.get("/admin/users", auth, requireRole("admin"), async (_req, res) => {
-  const users2 = await storage.getAdminUsers();
-  res.json(users2);
-});
-router.post("/admin/staff", auth, requireRole("admin"), async (req, res) => {
-  const { email, password, name: name2 } = req.body;
-  if (!email || !password || !name2) {
-    return res.status(400).json({ error: "Email, password and name are required" });
-  }
-  const existing = await storage.getUserByEmail(email);
-  if (existing) return res.status(409).json({ error: "Email already in use" });
-  const user = await storage.createUser({ email, password, name: name2, role: "warehouse" });
-  res.status(201).json({ id: user.id, email: user.email, name: user.name, role: user.role });
-});
-router.delete("/admin/staff/:id", auth, requireRole("admin"), async (req, res) => {
-  const idParams = req.params.id;
-  const id = Number(idParams);
-  console.log(`### ATTEMPTING DELETE STAFF: id=${id}, params=${idParams}`);
-  if (isNaN(id)) {
-    return res.status(400).json({ error: "Invalid staff ID" });
-  }
-  const user = await storage.getUserById(id);
-  if (!user) {
-    console.log(`### DELETE STAFF FAILED: User ${id} not found in database`);
-    return res.status(404).json({ error: "Staff member not found" });
-  }
-  if (user.role !== "warehouse") {
-    console.log(`### DELETE STAFF FAILED: User ${id} is not warehouse staff (role=${user.role})`);
-    return res.status(400).json({ error: "Can only remove warehouse staff" });
-  }
-  await storage.deleteUser(id);
-  console.log(`### DELETE STAFF SUCCESS: User ${id} removed`);
-  res.sendStatus(204);
-});
-router.post("/support/email", auth, async (req, res) => {
-  const { subject, message } = req.body;
-  if (!subject || !message) return res.status(400).json({ error: "subject and message are required" });
-  console.log(`### SUPPORT TICKET from ${req.user.email}: [${subject}] ${message}`);
-  res.json({ success: true, message: "Support ticket received. We'll get back to you soon!" });
-});
-router.get("/api/favorites", auth, async (req, res) => {
-  const favs = await storage.getFavorites(req.user.id);
-  res.json(favs);
-});
-router.post("/api/favorites/:id", auth, async (req, res) => {
-  await storage.addFavorite(req.user.id, Number(req.params.id));
-  res.sendStatus(201);
-});
-router.delete("/api/favorites/:id", auth, async (req, res) => {
-  await storage.removeFavorite(req.user.id, Number(req.params.id));
-  res.sendStatus(204);
-});
-router.get("/api/payments/methods", auth, async (_req, res) => {
-  res.json([
-    { id: 1, brand: "visa", last4: "4421", expiry: "12/25", isDefault: true },
-    { id: 2, brand: "mastercard", last4: "8892", expiry: "09/24", isDefault: false },
-    { id: 3, brand: "momo", provider: "MTN", phone: "055XXXXX21", isDefault: false }
-  ]);
-});
-router.post("/api/rewards/redeem", auth, async (req, res) => {
-  const { points } = req.body;
-  if (!points || points <= 0) return res.status(400).json({ error: "Points required" });
-  const user = await storage.getUserById(req.user.id);
-  if (!user || user.points < points) return res.status(400).json({ error: "Insufficient points" });
-  res.json({ success: true, message: `Successfully redeemed ${points} points for a GH\u20B510 Coupon!` });
-});
-var routes_default = router;
-
 // server/cj-routes.ts
-var import_express2 = __toESM(require_express2(), 1);
-var import_jsonwebtoken2 = __toESM(require_jsonwebtoken(), 1);
+var import_express = __toESM(require_express2(), 1);
+var import_jsonwebtoken = __toESM(require_jsonwebtoken(), 1);
 
 // server/cj.ts
 var CJ_BASE = "https://developers.cjdropshipping.com/api2.0/v1";
@@ -126482,20 +125851,20 @@ async function runBotImport(limitPerCategory = 100, markup = 30) {
 }
 
 // server/cj-routes.ts
-var router2 = (0, import_express2.Router)();
-var JWT_SECRET2 = process.env.JWT_SECRET || "trends-electronics-secret-key-change-in-production";
-function auth2(req, res, next) {
+var router = (0, import_express.Router)();
+var JWT_SECRET = process.env.JWT_SECRET || "trends-electronics-secret-key-change-in-production";
+function auth(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
-    const decoded = import_jsonwebtoken2.default.verify(token, JWT_SECRET2);
+    const decoded = import_jsonwebtoken.default.verify(token, JWT_SECRET);
     req.user = decoded;
     next();
   } catch {
     res.status(401).json({ error: "Invalid token" });
   }
 }
-function requireRole2(...roles3) {
+function requireRole(...roles3) {
   return (req, res, next) => {
     if (!req.user || !roles3.includes(req.user.role)) {
       return res.status(403).json({ error: "Forbidden" });
@@ -126503,10 +125872,10 @@ function requireRole2(...roles3) {
     next();
   };
 }
-router2.get("/status", (_req, res) => {
+router.get("/status", (_req, res) => {
   res.json({ configured: isCJConfigured() });
 });
-router2.get("/products/search", auth2, requireRole2("admin"), async (req, res) => {
+router.get("/products/search", auth, requireRole("admin"), async (req, res) => {
   if (!isCJConfigured()) {
     return res.status(503).json({ error: "CJ Dropshipping API key not configured. Add CJ_API_KEY to your environment variables." });
   }
@@ -126525,7 +125894,7 @@ router2.get("/products/search", auth2, requireRole2("admin"), async (req, res) =
     res.status(500).json({ error: err.message || "CJ product search failed" });
   }
 });
-router2.get("/products/:pid", auth2, requireRole2("admin"), async (req, res) => {
+router.get("/products/:pid", auth, requireRole("admin"), async (req, res) => {
   if (!isCJConfigured()) {
     return res.status(503).json({ error: "CJ API keys not configured" });
   }
@@ -126536,7 +125905,7 @@ router2.get("/products/:pid", auth2, requireRole2("admin"), async (req, res) => 
     res.status(500).json({ error: err.message });
   }
 });
-router2.post("/products/import", auth2, requireRole2("admin"), async (req, res) => {
+router.post("/products/import", auth, requireRole("admin"), async (req, res) => {
   if (!isCJConfigured()) {
     return res.status(503).json({ error: "CJ API key not configured" });
   }
@@ -126600,7 +125969,7 @@ router2.post("/products/import", auth2, requireRole2("admin"), async (req, res) 
     res.status(500).json({ error: err.message });
   }
 });
-router2.get("/categories", auth2, requireRole2("admin"), async (_req, res) => {
+router.get("/categories", auth, requireRole("admin"), async (_req, res) => {
   if (!isCJConfigured()) return res.status(503).json({ error: "CJ API key not configured" });
   try {
     const cats = await getCJCategories();
@@ -126609,7 +125978,7 @@ router2.get("/categories", auth2, requireRole2("admin"), async (_req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-router2.post("/products/bulk-import", auth2, requireRole2("admin"), async (req, res) => {
+router.post("/products/bulk-import", auth, requireRole("admin"), async (req, res) => {
   if (!isCJConfigured()) return res.status(503).json({ error: "CJ API key not configured" });
   const { keyword, categoryId, limit = 20, markup = 30, storeCategory = "Electronics" } = req.body;
   if (!keyword && !categoryId) {
@@ -126696,7 +126065,7 @@ router2.post("/products/bulk-import", auth2, requireRole2("admin"), async (req, 
     res.status(500).json({ error: err.message });
   }
 });
-router2.get("/shipping/rates", async (req, res) => {
+router.get("/shipping/rates", async (req, res) => {
   if (!isCJConfigured()) {
     return res.json([
       { logisticName: "CJ Packet", logisticAbbreviation: "CJPacket", logisticPrice: 3.99, estimateDeliveryDays: "7-15" },
@@ -126715,74 +126084,121 @@ router2.get("/shipping/rates", async (req, res) => {
     ]);
   }
 });
-router2.post("/orders/:orderId/fulfill", auth2, requireRole2("admin", "warehouse"), async (req, res) => {
+async function fulfillOrderWithCJ(orderId, shippingAddressOverride) {
   if (!isCJConfigured()) {
-    return res.status(503).json({ error: "CJ API keys not configured. Add CJ_API_EMAIL and CJ_API_KEY to your .env file." });
+    throw new Error("CJ API keys not configured. Add CJ_API_EMAIL and CJ_API_KEY to your .env file.");
   }
-  const orderId = Number(req.params.orderId);
   const order = await storage.getOrderById(orderId);
-  if (!order) return res.status(404).json({ error: "Order not found" });
+  if (!order) throw new Error("Order not found");
   if (order.cjOrderId) {
-    return res.status(409).json({ error: "Order already submitted to CJ", cjOrderId: order.cjOrderId });
+    return {
+      success: true,
+      cjOrderId: order.cjOrderId,
+      cjOrderNum: order.cjOrderNum,
+      alreadyFulfilled: true
+    };
   }
-  const { shippingAddress } = req.body;
-  if (!shippingAddress?.country || !shippingAddress?.address || !shippingAddress?.consignee) {
-    return res.status(400).json({ error: "shippingAddress with consignee, country, province, city, address, zip, phone is required" });
+  let shippingAddress;
+  if (shippingAddressOverride) {
+    shippingAddress = shippingAddressOverride;
+  } else {
+    const o = order;
+    if (o.shippingName && o.shippingAddress && o.shippingCity && o.shippingCountry) {
+      shippingAddress = {
+        consignee: o.shippingName,
+        phone: o.shippingPhone || "",
+        address: o.shippingAddress,
+        city: o.shippingCity,
+        province: o.shippingProvince || o.shippingCity,
+        zip: o.shippingZip || "",
+        country: o.shippingCountry
+      };
+    } else {
+      const parts = (order.deliveryAddress || "").split(",").map((p) => p.trim());
+      const country = parts.pop() || "GH";
+      const zip = parts.length > 3 ? parts.pop() : "";
+      const province = parts.length > 2 ? parts.pop() : "";
+      const city = parts.length > 1 ? parts.pop() : "";
+      const address = parts.join(", ") || order.deliveryAddress;
+      let consignee = "Customer";
+      let phone = "";
+      try {
+        const userRec = await storage.getUserById(order.userId);
+        if (userRec) {
+          consignee = userRec.name || "Customer";
+          phone = userRec.phone || "";
+        }
+      } catch {
+      }
+      shippingAddress = {
+        consignee,
+        phone,
+        address,
+        city: city || "Accra",
+        province: province || city || "Greater Accra",
+        zip: zip || "00233",
+        country
+      };
+    }
   }
-  try {
-    const cjItems = [];
-    const missingVid = [];
-    for (const item of order.items) {
-      if (item.menuItemId) {
-        const menuItem = await storage.getMenuItem(item.menuItemId);
-        if (menuItem?.cjVid) {
-          cjItems.push({ vid: menuItem.cjVid, quantity: item.quantity });
-        } else if (menuItem?.cjPid) {
-          try {
-            const detail = await getCJProductDetail(menuItem.cjPid);
-            if (detail.variants && detail.variants.length > 0) {
-              const vid = detail.variants[0].vid;
-              await db.update(menuItems).set({ cjVid: vid, updatedAt: /* @__PURE__ */ new Date() }).where(eq(menuItems.id, menuItem.id));
-              cjItems.push({ vid, quantity: item.quantity });
-            } else {
-              missingVid.push(item.name);
-            }
-          } catch {
+  if (!shippingAddress.country || !shippingAddress.address || !shippingAddress.consignee) {
+    throw new Error("Complete shipping details (consignee, address, city, country) are required to fulfill via CJ.");
+  }
+  const cjItems = [];
+  const missingVid = [];
+  for (const item of order.items) {
+    if (item.menuItemId) {
+      const menuItem = await storage.getMenuItem(item.menuItemId);
+      if (menuItem?.cjVid) {
+        cjItems.push({ vid: menuItem.cjVid, quantity: item.quantity });
+      } else if (menuItem?.cjPid) {
+        try {
+          const detail = await getCJProductDetail(menuItem.cjPid);
+          if (detail.variants && detail.variants.length > 0) {
+            const vid = detail.variants[0].vid;
+            await db.update(menuItems).set({ cjVid: vid, updatedAt: /* @__PURE__ */ new Date() }).where(eq(menuItems.id, menuItem.id));
+            cjItems.push({ vid, quantity: item.quantity });
+          } else {
             missingVid.push(item.name);
           }
-        } else {
+        } catch {
           missingVid.push(item.name);
         }
+      } else {
+        missingVid.push(item.name);
       }
     }
-    if (cjItems.length === 0) {
-      return res.status(400).json({
-        error: `Cannot fulfill: none of the products in this order are linked to CJ. Products without CJ link: ${missingVid.join(", ")}. Re-import these products from the CJ Import tab.`
-      });
-    }
-    if (missingVid.length > 0) {
-      console.warn(`Partial CJ fulfill for order ${orderId} \u2014 skipping non-CJ items: ${missingVid.join(", ")}`);
-    }
-    const referenceNo = `TRENDS-${orderId}-${Date.now()}`;
-    const result = await createCJOrder(referenceNo, shippingAddress, cjItems);
-    await db.update(orders).set({
-      cjOrderId: result.orderId,
-      cjOrderNum: result.orderNumber || result.orderNum || null,
-      shippingCountry: shippingAddress.country,
-      updatedAt: /* @__PURE__ */ new Date()
-    }).where(eq(orders.id, orderId));
-    res.json({
-      success: true,
-      cjOrderId: result.orderId,
-      cjOrderNum: result.orderNumber || result.orderNum,
-      skippedItems: missingVid.length > 0 ? missingVid : void 0
-    });
+  }
+  if (cjItems.length === 0) {
+    throw new Error(`Cannot fulfill: none of the products in this order are linked to CJ. Products without CJ link: ${missingVid.join(", ")}`);
+  }
+  const referenceNo = `TRENDS-${orderId}-${Date.now()}`;
+  const result = await createCJOrder(referenceNo, shippingAddress, cjItems);
+  await db.update(orders).set({
+    cjOrderId: result.orderId,
+    cjOrderNum: result.orderNumber || result.orderNum || null,
+    shippingCountry: shippingAddress.country,
+    updatedAt: /* @__PURE__ */ new Date()
+  }).where(eq(orders.id, orderId));
+  return {
+    success: true,
+    cjOrderId: result.orderId,
+    cjOrderNum: result.orderNumber || result.orderNum,
+    skippedItems: missingVid.length > 0 ? missingVid : void 0
+  };
+}
+router.post("/orders/:orderId/fulfill", auth, requireRole("admin", "warehouse"), async (req, res) => {
+  const orderId = Number(req.params.orderId);
+  const { shippingAddress } = req.body;
+  try {
+    const result = await fulfillOrderWithCJ(orderId, shippingAddress);
+    res.json(result);
   } catch (err) {
     console.error("CJ order fulfillment error:", err);
     res.status(500).json({ error: err.message || "CJ order fulfillment failed" });
   }
 });
-router2.post("/orders/:orderId/sync-tracking", auth2, requireRole2("admin", "warehouse"), async (req, res) => {
+router.post("/orders/:orderId/sync-tracking", auth, requireRole("admin", "warehouse"), async (req, res) => {
   if (!isCJConfigured()) {
     return res.status(503).json({ error: "CJ API keys not configured" });
   }
@@ -126808,7 +126224,7 @@ router2.post("/orders/:orderId/sync-tracking", auth2, requireRole2("admin", "war
     res.status(500).json({ error: err.message });
   }
 });
-router2.get("/orders/:orderId/tracking", auth2, async (req, res) => {
+router.get("/orders/:orderId/tracking", auth, async (req, res) => {
   const orderId = Number(req.params.orderId);
   const order = await storage.getOrderById(orderId);
   if (!order) return res.status(404).json({ error: "Order not found" });
@@ -126823,10 +126239,10 @@ router2.get("/orders/:orderId/tracking", auth2, async (req, res) => {
     shippingCountry: order.shippingCountry || null
   });
 });
-router2.get("/bot/status", auth2, requireRole2("admin"), (_req, res) => {
+router.get("/bot/status", auth, requireRole("admin"), (_req, res) => {
   res.json(botState);
 });
-router2.post("/bot/trigger", auth2, requireRole2("admin"), (req, res) => {
+router.post("/bot/trigger", auth, requireRole("admin"), (req, res) => {
   const { limit = 100, markup = 30 } = req.body;
   if (botState.running) {
     return res.status(409).json({ error: "Bot is already running" });
@@ -126834,7 +126250,7 @@ router2.post("/bot/trigger", auth2, requireRole2("admin"), (req, res) => {
   runBotImport(Number(limit), Number(markup));
   res.json({ message: "Bot triggered successfully in the background", status: botState });
 });
-router2.post("/bot/backfill-media", auth2, requireRole2("admin"), async (_req, res) => {
+router.post("/bot/backfill-media", auth, requireRole("admin"), async (_req, res) => {
   res.json({ message: "Backfill started in the background. Check bot logs for progress." });
   try {
     const { isNull: isNull2, and: and2, isNotNull: isNotNull2 } = await Promise.resolve().then(() => (init_drizzle_orm(), drizzle_orm_exports));
@@ -126884,7 +126300,671 @@ router2.post("/bot/backfill-media", auth2, requireRole2("admin"), async (_req, r
     console.error(`### BACKFILL ERROR: ${err.message}`);
   }
 });
-var cj_routes_default = router2;
+var cj_routes_default = router;
+
+// server/routes.ts
+var import_multer = __toESM(require_multer(), 1);
+var import_path2 = __toESM(require("path"), 1);
+var import_google_auth_library = __toESM(require_src5(), 1);
+var storageConfig = import_multer.default.diskStorage({
+  destination: "public/uploads",
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, file.fieldname + "-" + uniqueSuffix + import_path2.default.extname(file.originalname));
+  }
+});
+var upload = (0, import_multer.default)({
+  storage: storageConfig,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  // 5MB limit
+  fileFilter: (_req, file, cb) => {
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Invalid file type. Only JPEG, PNG and WEBP are allowed."));
+  }
+});
+var aiLimiter = rate_limit_default({
+  windowMs: 60 * 1e3,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many AI requests, please try again in a minute." }
+});
+var router2 = (0, import_express2.Router)();
+var JWT_SECRET2 = process.env.JWT_SECRET || "trends-electronics-secret-key-change-in-production";
+var GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
+var client = new import_google_auth_library.OAuth2Client(GOOGLE_CLIENT_ID);
+function auth2(req, res, next) {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
+  try {
+    const decoded = import_jsonwebtoken2.default.verify(token, JWT_SECRET2);
+    req.user = decoded;
+    next();
+  } catch {
+    res.status(401).json({ error: "Invalid token" });
+  }
+}
+function requireRole2(...roles3) {
+  return (req, res, next) => {
+    if (!req.user || !roles3.includes(req.user.role)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    next();
+  };
+}
+var registerSchema = external_exports.object({
+  email: external_exports.string().email(),
+  password: external_exports.string().min(6),
+  name: external_exports.string().min(1),
+  phone: external_exports.string().optional(),
+  role: external_exports.enum(roles).optional(),
+  address: external_exports.string().optional(),
+  adminSecret: external_exports.string().optional()
+});
+router2.post("/auth/check-email", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email is required" });
+  try {
+    const user = await storage.getUserByEmail(email.toLowerCase());
+    res.json({ exists: !!user });
+  } catch (err) {
+    res.json({ exists: false });
+  }
+});
+router2.post("/auth/register", async (req, res) => {
+  const result = registerSchema.safeParse(req.body);
+  if (!result.success) return res.status(400).json({ error: result.error.flatten() });
+  const { role, adminSecret, email } = result.data;
+  const lowerEmail = email.toLowerCase();
+  if (role === "admin") {
+    return res.status(403).json({ error: "Admin accounts are managed by the super admin" });
+  }
+  if (lowerEmail === "admin@trends.com") {
+    return res.status(403).json({ error: "Unauthorized email address" });
+  }
+  const existing = await storage.getUserByEmail(email);
+  if (existing) return res.status(409).json({ error: "Email already in use" });
+  const { adminSecret: _, ...userData } = result.data;
+  const user = await storage.createUser(userData);
+  const token = import_jsonwebtoken2.default.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET2, { expiresIn: "7d" });
+  res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone, address: user.address } });
+});
+router2.post("/auth/google", async (req, res) => {
+  const { credential } = req.body;
+  if (!credential) return res.status(400).json({ error: "Google credential required" });
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID
+    });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) return res.status(400).json({ error: "Invalid Google token" });
+    const { email, name: name2, sub: googleId } = payload;
+    let user = await storage.getUserByGoogleId(googleId);
+    if (!user) {
+      user = await storage.getUserByEmail(email);
+      if (user) {
+        user = await storage.updateUserProfile(user.id, { name: name2 });
+      } else {
+        user = await storage.createUser({
+          email,
+          name: name2 || email.split("@")[0],
+          googleId,
+          role: "customer"
+        });
+      }
+    }
+    const token = import_jsonwebtoken2.default.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET2, { expiresIn: "7d" });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone, address: user.address } });
+  } catch (err) {
+    console.error("Google Auth error:", err);
+    res.status(401).json({ error: "Google authentication failed" });
+  }
+});
+router2.post("/auth/login", async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: "Email and password required" });
+  const user = await storage.getUserByEmail(email);
+  if (!user) return res.status(401).json({ error: "Invalid credentials" });
+  const valid = await storage.validatePassword(user, password);
+  if (!valid) return res.status(401).json({ error: "Invalid credentials" });
+  const token = import_jsonwebtoken2.default.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET2, { expiresIn: "7d" });
+  res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone, address: user.address } });
+});
+router2.get("/auth/me", auth2, async (req, res) => {
+  const user = await storage.getUserById(req.user.id);
+  if (!user) return res.status(404).json({ error: "User not found" });
+  res.json({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    phone: user.phone,
+    address: user.address,
+    points: user.points,
+    interests: user.interests
+  });
+});
+router2.patch("/auth/profile", auth2, async (req, res) => {
+  const { name: name2, phone, address, interests } = req.body;
+  const user = await storage.updateUserProfile(req.user.id, { name: name2, phone, address, interests });
+  if (!user) return res.status(404).json({ error: "User not found" });
+  res.json({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    phone: user.phone,
+    address: user.address,
+    points: user.points,
+    interests: user.interests
+  });
+});
+router2.get("/menu", async (req, res) => {
+  const limit = req.query.limit ? parseInt(req.query.limit) : void 0;
+  const page = req.query.page ? parseInt(req.query.page) : void 0;
+  const cat = req.query.cat;
+  const search = req.query.q;
+  const localOnly = req.query.localOnly === "true";
+  if (page && limit) {
+    const result = await storage.getPaginatedMenuItems(page, limit, cat, search, localOnly);
+    return res.json(result);
+  }
+  const items = await storage.getMenuItems();
+  let filtered = cat ? items.filter((i2) => i2.category === cat) : items;
+  if (search) {
+    const s2 = search.toLowerCase();
+    filtered = filtered.filter((i2) => i2.name.toLowerCase().includes(s2) || i2.description && i2.description.toLowerCase().includes(s2));
+  }
+  res.json(filtered);
+});
+router2.post("/menu/:id/rate", async (req, res) => {
+  const { rating } = req.body;
+  if (!rating || rating < 1 || rating > 5) {
+    return res.status(400).json({ error: "Invalid rating. Must be between 1 and 5." });
+  }
+  try {
+    const item = await storage.addRating(Number(req.params.id), Number(rating));
+    res.json(item);
+  } catch (err) {
+    res.status(404).json({ error: "Product not found" });
+  }
+});
+router2.get("/menu/:id", async (req, res) => {
+  const item = await storage.getMenuItem(Number(req.params.id));
+  if (!item) return res.status(404).json({ error: "Not found" });
+  res.json(item);
+});
+router2.patch("/admin/menu-items/:id/image", auth2, requireRole2("warehouse"), async (req, res) => {
+  const { imageUrl } = req.body;
+  if (!imageUrl) return res.status(400).json({ error: "imageUrl required" });
+  const item = await storage.updateMenuItemImage(Number(req.params.id), imageUrl);
+  res.json(item);
+});
+router2.post("/upload", auth2, requireRole2("admin", "warehouse"), upload.single("image"), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+  res.json({ url: `/uploads/${req.file.filename}` });
+});
+var createOrderSchema = external_exports.object({
+  deliveryAddress: external_exports.string().min(1),
+  subtotal: external_exports.string(),
+  deliveryFee: external_exports.string(),
+  tax: external_exports.string(),
+  tip: external_exports.string(),
+  total: external_exports.string(),
+  paymentMethod: external_exports.string(),
+  notes: external_exports.string().optional(),
+  shippingName: external_exports.string().optional(),
+  shippingPhone: external_exports.string().optional(),
+  shippingAddress: external_exports.string().optional(),
+  shippingCity: external_exports.string().optional(),
+  shippingProvince: external_exports.string().optional(),
+  shippingZip: external_exports.string().optional(),
+  shippingCountry: external_exports.string().optional(),
+  items: external_exports.array(external_exports.object({
+    menuItemId: external_exports.number().optional(),
+    name: external_exports.string(),
+    price: external_exports.string(),
+    quantity: external_exports.number().min(1),
+    extras: external_exports.array(external_exports.string()).optional(),
+    specialInstructions: external_exports.string().optional()
+  })).min(1)
+});
+router2.post("/orders", auth2, requireRole2("customer"), async (req, res) => {
+  const result = createOrderSchema.safeParse(req.body);
+  if (!result.success) return res.status(400).json({ error: result.error.flatten() });
+  const order = await storage.createOrder({ userId: req.user.id, ...result.data });
+  io2.to("warehouse").emit("new_order", { orderId: order.id, customerName: req.user.email });
+  res.status(201).json(order);
+});
+router2.get("/orders/my", auth2, requireRole2("customer"), async (req, res) => {
+  const userOrders = await storage.getOrdersByUser(req.user.id);
+  res.json(userOrders);
+});
+router2.get("/orders/:id", auth2, async (req, res) => {
+  const order = await storage.getOrderById(Number(req.params.id));
+  if (!order) return res.status(404).json({ error: "Not found" });
+  if (req.user.role === "customer" && order.userId !== req.user.id) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  res.json(order);
+});
+router2.patch("/orders/:id/location", auth2, requireRole2("courier", "admin"), async (req, res) => {
+  const { lat, lng } = req.body;
+  if (typeof lat !== "number" || typeof lng !== "number") {
+    return res.status(400).json({ error: "Invalid coordinates" });
+  }
+  const order = await storage.updateCourierLocation(Number(req.params.id), lat, lng);
+  io2.to(`order:${order.id}`).emit("courier:location_updated", { lat, lng });
+  res.json(order);
+});
+router2.patch("/orders/:id/customer-location", auth2, async (req, res) => {
+  const { lat, lng } = req.body;
+  if (typeof lat !== "number" || typeof lng !== "number") {
+    return res.status(400).json({ error: "Invalid coordinates" });
+  }
+  const order = await storage.updateCustomerLocation(Number(req.params.id), lat, lng);
+  res.json(order);
+});
+router2.get("/payments/config", (_req, res) => {
+  res.json({ publicKey: process.env.PAYSTACK_PUBLIC_KEY || "" });
+});
+router2.post("/payments/initialize", auth2, async (req, res) => {
+  const { orderId, email, amount, currency } = req.body;
+  if (!orderId || !email || !amount) {
+    return res.status(400).json({ error: "orderId, email, and amount required" });
+  }
+  const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+  if (!PAYSTACK_SECRET_KEY) {
+    return res.status(500).json({ error: "Paystack not configured" });
+  }
+  const amountInPesewas = Math.round(parseFloat(amount) * 100);
+  try {
+    const response = await fetch("https://api.paystack.co/transaction/initialize", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        email,
+        amount: amountInPesewas,
+        currency: currency || "GHS",
+        metadata: { orderId, custom_fields: [{ display_name: "Order ID", variable_name: "order_id", value: String(orderId) }] }
+      })
+    });
+    if (!response.ok) {
+      console.warn("Paystack API error - using development fallback");
+      return res.json({ accessCode: "dev_access_code", reference: `dev_ref_${Date.now()}` });
+    }
+    const data = await response.json();
+    if (!data.status || !data.data) {
+      return res.status(400).json({ error: "Paystack initialization failed" });
+    }
+    res.json({ accessCode: data.data.access_code, reference: data.data.reference });
+  } catch (err) {
+    console.warn("Paystack init fetch failed - using development fallback:", err);
+    res.json({ accessCode: "dev_access_code", reference: `dev_ref_${Date.now()}` });
+  }
+});
+router2.post("/payments/verify", auth2, async (req, res) => {
+  const { reference, orderId } = req.body;
+  if (!reference || !orderId) {
+    return res.status(400).json({ error: "reference and orderId required" });
+  }
+  const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+  if (!PAYSTACK_SECRET_KEY) {
+    return res.status(500).json({ error: "Paystack not configured" });
+  }
+  try {
+    const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+      headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` }
+    });
+    const data = await response.json();
+    if (!data.status || data.data?.status !== "success") {
+      return res.status(400).json({ error: "Payment verification failed" });
+    }
+    const order = await storage.updatePaymentStatus(Number(orderId), "completed", reference);
+    await storage.updateOrderStatus(Number(orderId), "confirmed");
+    io2.to(`user:${order.userId}`).emit("order_status", { orderId: order.id, status: "confirmed" });
+    fulfillOrderWithCJ(Number(orderId)).then((result) => {
+      console.log(`Auto-fulfilled order ${orderId} with CJ Dropshipping:`, result);
+    }).catch((err) => {
+      console.error(`Failed to auto-fulfill order ${orderId} with CJ Dropshipping:`, err);
+    });
+    res.json({ success: true, reference, order });
+  } catch (err) {
+    console.error("Paystack verify error:", err);
+    res.status(500).json({ error: "Payment verification failed" });
+  }
+});
+router2.get("/management/orders", auth2, requireRole2("warehouse"), async (_req, res) => {
+  const allOrders = await storage.getAllOrders();
+  res.json(allOrders);
+});
+router2.patch("/management/orders/:id/status", auth2, requireRole2("warehouse"), async (req, res) => {
+  const { status } = req.body;
+  const validStatuses = ["pending", "confirmed", "packaging", "ready", "assigned", "picked_up", "delivered", "cancelled"];
+  if (!validStatuses.includes(status)) return res.status(400).json({ error: "Invalid status" });
+  const order = await storage.updateOrderStatus(Number(req.params.id), status);
+  io2.to(`user:${order.userId}`).emit("order_status", { orderId: order.id, status });
+  res.json(order);
+});
+router2.patch("/management/orders/:id/assign", auth2, requireRole2("warehouse"), async (req, res) => {
+  const { courierId } = req.body;
+  if (!courierId) return res.status(400).json({ error: "courierId required" });
+  const order = await storage.assignCourier(Number(req.params.id), Number(courierId));
+  io2.to(`courier:${courierId}`).emit("order_assigned", { orderId: order.id });
+  io2.to(`user:${order.userId}`).emit("order_status", { orderId: order.id, status: "assigned" });
+  res.json(order);
+});
+router2.get("/management/couriers", auth2, requireRole2("warehouse"), async (_req, res) => {
+  const couriers = await storage.getAllCouriers();
+  res.json(couriers.map((r2) => ({ id: r2.id, name: r2.name, email: r2.email, phone: r2.phone })));
+});
+router2.get("/courier/orders", auth2, requireRole2("courier"), async (req, res) => {
+  const courierOrders = await storage.getCourierOrders(req.user.id);
+  res.json(courierOrders);
+});
+router2.patch("/courier/orders/:id/status", auth2, requireRole2("courier"), async (req, res) => {
+  const { status } = req.body;
+  const allowedStatuses = ["picked_up", "delivered"];
+  if (!allowedStatuses.includes(status)) return res.status(400).json({ error: "Invalid status for courier" });
+  const order = await storage.getOrderById(Number(req.params.id));
+  if (!order) return res.status(404).json({ error: "Order not found" });
+  if (order.courierId !== req.user.id) return res.status(403).json({ error: "Not your order" });
+  const updated = await storage.updateOrderStatus(Number(req.params.id), status);
+  io2.to(`user:${updated.userId}`).emit("order_status", { orderId: updated.id, status });
+  res.json(updated);
+});
+router2.get("/ai/recommendations", aiLimiter, async (req, res) => {
+  try {
+    const menuItems2 = await storage.getMenuItems();
+    const { recentOrders, interests } = await (async () => {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) return { recentOrders: [], interests: null };
+      const token = authHeader.split(" ")[1];
+      if (!token) return { recentOrders: [], interests: null };
+      try {
+        const decoded = import_jsonwebtoken2.default.verify(token, process.env.JWT_SECRET || "fallback-secret");
+        const [orders2, user] = await Promise.all([
+          storage.getOrdersByUser(decoded.id),
+          storage.getUserById(decoded.id)
+        ]);
+        return { recentOrders: orders2, interests: user?.interests };
+      } catch {
+        return { recentOrders: [], interests: null };
+      }
+    })();
+    const hour = (/* @__PURE__ */ new Date()).getHours();
+    const timeOfDay = hour < 11 ? "morning" : hour < 15 ? "afternoon" : hour < 21 ? "evening" : "night";
+    const simplified = menuItems2.map((m2) => ({
+      id: m2.id,
+      name: m2.name,
+      category: m2.category,
+      price: m2.price,
+      tags: m2.tags ? JSON.parse(m2.tags) : []
+    }));
+    const recs = await getRecommendations(simplified, recentOrders, timeOfDay, interests);
+    res.json(recs);
+  } catch (err) {
+    console.error("AI recommendations error:", err);
+    res.json([]);
+  }
+});
+router2.get("/ai/eta/:orderId", aiLimiter, auth2, async (req, res) => {
+  try {
+    const order = await storage.getOrderById(Number(req.params.orderId));
+    if (!order) return res.status(404).json({ error: "Order not found" });
+    if (req.user.role === "customer" && order.userId !== req.user.id) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    const eta = await getOrderETA(order.status, new Date(order.createdAt), order.items.length);
+    res.json(eta);
+  } catch (err) {
+    console.error("AI ETA error:", err);
+    res.json({ eta: "Usually ready in 15-20 min", details: "AI service temporarily unavailable" });
+  }
+});
+router2.get("/ai/warehouse-summary", aiLimiter, auth2, requireRole2("warehouse"), async (_req, res) => {
+  try {
+    const allOrders = await storage.getAllOrders();
+    const simplified = allOrders.map((o) => ({
+      id: o.id,
+      status: o.status,
+      createdAt: new Date(o.createdAt),
+      items: o.items.map((i2) => ({ name: i2.name, quantity: i2.quantity }))
+    }));
+    const summary = await getWarehouseSummary(simplified);
+    res.json({ summary });
+  } catch (err) {
+    console.error("AI warehouse summary error:", err);
+    res.json({ summary: "Warehouse is busy, but running smoothly. Check new orders frequently." });
+  }
+});
+router2.get("/admin/stats", auth2, requireRole2("admin"), async (req, res) => {
+  const days = Number(req.query.days) || 30;
+  const stats = await storage.getAdminStats(days);
+  res.json(stats);
+});
+router2.get("/admin/orders", auth2, requireRole2("admin"), async (_req, res) => {
+  const allOrders = await storage.getAllOrders();
+  const enriched = await Promise.all(
+    allOrders.map(async (order) => {
+      const items = await Promise.all(
+        order.items.map(async (item) => {
+          if (item.menuItemId) {
+            const menuItem = await storage.getMenuItem(item.menuItemId);
+            return { ...item, cjCost: menuItem?.cjCost || null };
+          }
+          return { ...item, cjCost: null };
+        })
+      );
+      return { ...order, items };
+    })
+  );
+  res.json(enriched);
+});
+router2.patch("/admin/orders/:id/status", auth2, requireRole2("admin"), async (req, res) => {
+  const { status } = req.body;
+  const validStatuses = ["pending", "confirmed", "packaging", "ready", "assigned", "picked_up", "delivered", "cancelled"];
+  if (!validStatuses.includes(status)) return res.status(400).json({ error: "Invalid status" });
+  const order = await storage.updateOrderStatus(Number(req.params.id), status);
+  io2.to(`user:${order.userId}`).emit("order_status", { orderId: order.id, status });
+  res.json(order);
+});
+router2.patch("/orders/:id/cancel", auth2, async (req, res) => {
+  const order = await storage.getOrderById(Number(req.params.id));
+  if (!order) return res.status(404).json({ error: "Order not found" });
+  if (req.user.role === "customer") {
+    if (order.userId !== req.user.id) return res.status(403).json({ error: "Forbidden" });
+    if (!["pending", "confirmed"].includes(order.status)) {
+      return res.status(400).json({ error: "Order can no longer be cancelled" });
+    }
+  }
+  const updated = await storage.updateOrderStatus(Number(req.params.id), "cancelled");
+  io2.to(`user:${updated.userId}`).emit("order_status", { orderId: updated.id, status: "cancelled" });
+  res.json(updated);
+});
+router2.get("/admin/menu-items", auth2, requireRole2("admin", "warehouse"), async (_req, res) => {
+  const items = await storage.getMenuItems(true);
+  res.json(items);
+});
+router2.post("/admin/menu-items", auth2, requireRole2("admin"), async (req, res) => {
+  const item = await storage.createMenuItem(req.body);
+  res.status(201).json(item);
+});
+router2.patch("/admin/menu-items/:id", auth2, requireRole2("admin", "warehouse"), async (req, res) => {
+  const item = await storage.updateMenuItem(Number(req.params.id), req.body);
+  res.json(item);
+});
+router2.delete("/admin/menu-items/:id", auth2, requireRole2("admin"), async (req, res) => {
+  await storage.deleteMenuItem(Number(req.params.id));
+  res.sendStatus(204);
+});
+router2.post("/ai/search", aiLimiter, async (req, res) => {
+  try {
+    const { query } = req.body;
+    if (!query || typeof query !== "string" || query.trim().length === 0) {
+      return res.status(400).json({ error: "query is required" });
+    }
+    const items = await storage.getMenuItems();
+    const simplified = items.map((m2) => ({
+      id: m2.id,
+      name: m2.name,
+      category: m2.category,
+      price: m2.price,
+      description: m2.description,
+      tags: m2.tags ? JSON.parse(m2.tags) : []
+    }));
+    try {
+      const result = await searchMenu(query.trim(), simplified);
+      const matchedItems = items.filter((i2) => result.itemIds.includes(i2.id));
+      res.json({ message: result.message, items: matchedItems });
+    } catch {
+      const q = query.trim().toLowerCase();
+      const matchedItems = items.filter((i2) => {
+        const tagsStr = i2.tags ? i2.tags.toLowerCase() : "";
+        return i2.name.toLowerCase().includes(q) || i2.description && i2.description.toLowerCase().includes(q) || i2.category && i2.category.toLowerCase().includes(q) || tagsStr.includes(q);
+      });
+      res.json({
+        message: matchedItems.length > 0 ? `Found ${matchedItems.length} item(s) matching "${query}".` : `No items found for "${query}". Try browsing the full menu!`,
+        items: matchedItems
+      });
+    }
+  } catch (err) {
+    console.error("AI search error:", err);
+    res.status(500).json({ error: "Search unavailable, please try again." });
+  }
+});
+router2.post("/ai/support", aiLimiter, async (req, res) => {
+  try {
+    const { message, history } = req.body;
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ error: "message is required" });
+    }
+    const items = await storage.getMenuItems();
+    const simplified = items.map((m2) => ({
+      id: m2.id,
+      name: m2.name,
+      category: m2.category,
+      price: m2.price,
+      description: m2.description,
+      tags: m2.tags ? JSON.parse(m2.tags) : []
+    }));
+    const { user, activeOrders } = await (async () => {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) return { user: null, activeOrders: [] };
+      const token = authHeader.split(" ")[1];
+      if (!token) return { user: null, activeOrders: [] };
+      try {
+        const decoded = import_jsonwebtoken2.default.verify(token, JWT_SECRET2);
+        const [userData, orders2] = await Promise.all([
+          storage.getUserById(decoded.id),
+          storage.getOrdersByUser(decoded.id)
+        ]);
+        const active = orders2.filter((o) => !["delivered", "cancelled"].includes(o.status));
+        return { user: userData, activeOrders: active };
+      } catch {
+        return { user: null, activeOrders: [] };
+      }
+    })();
+    const reply = await getSupportResponse(message, history || [], simplified, user?.interests, activeOrders);
+    res.json({ reply });
+  } catch (err) {
+    console.error("### AI_SUPPORT_ROUTE_ERROR:", err);
+    res.json({ reply: "I'm here to help! Please contact us at support@trends.com or call our hotline for urgent issues." });
+  }
+});
+router2.post("/ai/admin-insights", aiLimiter, auth2, requireRole2("admin"), async (req, res) => {
+  try {
+    const days = Number(req.body.days) || 30;
+    const stats = await storage.getAdminStats(days);
+    try {
+      const insights = await getAdminInsights(stats);
+      res.json({ insights });
+    } catch {
+      res.json({
+        insights: `Over the past ${days} days, the store recorded ${stats.totalOrders} orders totalling GH\u20B5${stats.totalRevenue.toFixed(2)}. ${stats.popularItems.length > 0 ? `Top seller: ${stats.popularItems[0].name} (${stats.popularItems[0].count} sold).` : ""} Focus on maintaining quality and delivery speed to sustain growth.`
+      });
+    }
+  } catch (err) {
+    console.error("Admin insights error:", err);
+    res.status(500).json({ error: "Unable to load insights" });
+  }
+});
+router2.get("/admin/staff", auth2, requireRole2("admin"), async (_req, res) => {
+  const staff = await storage.getUsersByRole("warehouse");
+  res.json(staff.map((s2) => ({ id: s2.id, email: s2.email, name: s2.name, createdAt: s2.createdAt })));
+});
+router2.get("/admin/users", auth2, requireRole2("admin"), async (_req, res) => {
+  const users2 = await storage.getAdminUsers();
+  res.json(users2);
+});
+router2.post("/admin/staff", auth2, requireRole2("admin"), async (req, res) => {
+  const { email, password, name: name2 } = req.body;
+  if (!email || !password || !name2) {
+    return res.status(400).json({ error: "Email, password and name are required" });
+  }
+  const existing = await storage.getUserByEmail(email);
+  if (existing) return res.status(409).json({ error: "Email already in use" });
+  const user = await storage.createUser({ email, password, name: name2, role: "warehouse" });
+  res.status(201).json({ id: user.id, email: user.email, name: user.name, role: user.role });
+});
+router2.delete("/admin/staff/:id", auth2, requireRole2("admin"), async (req, res) => {
+  const idParams = req.params.id;
+  const id = Number(idParams);
+  console.log(`### ATTEMPTING DELETE STAFF: id=${id}, params=${idParams}`);
+  if (isNaN(id)) {
+    return res.status(400).json({ error: "Invalid staff ID" });
+  }
+  const user = await storage.getUserById(id);
+  if (!user) {
+    console.log(`### DELETE STAFF FAILED: User ${id} not found in database`);
+    return res.status(404).json({ error: "Staff member not found" });
+  }
+  if (user.role !== "warehouse") {
+    console.log(`### DELETE STAFF FAILED: User ${id} is not warehouse staff (role=${user.role})`);
+    return res.status(400).json({ error: "Can only remove warehouse staff" });
+  }
+  await storage.deleteUser(id);
+  console.log(`### DELETE STAFF SUCCESS: User ${id} removed`);
+  res.sendStatus(204);
+});
+router2.post("/support/email", auth2, async (req, res) => {
+  const { subject, message } = req.body;
+  if (!subject || !message) return res.status(400).json({ error: "subject and message are required" });
+  console.log(`### SUPPORT TICKET from ${req.user.email}: [${subject}] ${message}`);
+  res.json({ success: true, message: "Support ticket received. We'll get back to you soon!" });
+});
+router2.get("/api/favorites", auth2, async (req, res) => {
+  const favs = await storage.getFavorites(req.user.id);
+  res.json(favs);
+});
+router2.post("/api/favorites/:id", auth2, async (req, res) => {
+  await storage.addFavorite(req.user.id, Number(req.params.id));
+  res.sendStatus(201);
+});
+router2.delete("/api/favorites/:id", auth2, async (req, res) => {
+  await storage.removeFavorite(req.user.id, Number(req.params.id));
+  res.sendStatus(204);
+});
+router2.get("/api/payments/methods", auth2, async (_req, res) => {
+  res.json([
+    { id: 1, brand: "visa", last4: "4421", expiry: "12/25", isDefault: true },
+    { id: 2, brand: "mastercard", last4: "8892", expiry: "09/24", isDefault: false },
+    { id: 3, brand: "momo", provider: "MTN", phone: "055XXXXX21", isDefault: false }
+  ]);
+});
+router2.post("/api/rewards/redeem", auth2, async (req, res) => {
+  const { points } = req.body;
+  if (!points || points <= 0) return res.status(400).json({ error: "Points required" });
+  const user = await storage.getUserById(req.user.id);
+  if (!user || user.points < points) return res.status(400).json({ error: "Insufficient points" });
+  res.json({ success: true, message: `Successfully redeemed ${points} points for a GH\u20B510 Coupon!` });
+});
+var routes_default = router2;
 
 // server/index.ts
 var import_fs2 = __toESM(require("fs"), 1);

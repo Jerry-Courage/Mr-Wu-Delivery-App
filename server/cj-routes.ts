@@ -306,86 +306,133 @@ router.get("/shipping/rates", async (req, res) => {
 
 // ─── Fulfill Order via CJ ─────────────────────────────────────────────────────
 
-router.post("/orders/:orderId/fulfill", auth, requireRole("admin", "warehouse"), async (req, res) => {
+export async function fulfillOrderWithCJ(orderId: number, shippingAddressOverride?: any) {
   if (!isCJConfigured()) {
-    return res.status(503).json({ error: "CJ API keys not configured. Add CJ_API_EMAIL and CJ_API_KEY to your .env file." });
+    throw new Error("CJ API keys not configured. Add CJ_API_EMAIL and CJ_API_KEY to your .env file.");
   }
 
-  const orderId = Number(req.params.orderId);
   const order = await storage.getOrderById(orderId);
-  if (!order) return res.status(404).json({ error: "Order not found" });
+  if (!order) throw new Error("Order not found");
 
   if (order.cjOrderId) {
-    return res.status(409).json({ error: "Order already submitted to CJ", cjOrderId: order.cjOrderId });
+    return {
+      success: true,
+      cjOrderId: order.cjOrderId,
+      cjOrderNum: order.cjOrderNum,
+      alreadyFulfilled: true
+    };
   }
 
-  const { shippingAddress } = req.body;
-  if (!shippingAddress?.country || !shippingAddress?.address || !shippingAddress?.consignee) {
-    return res.status(400).json({ error: "shippingAddress with consignee, country, province, city, address, zip, phone is required" });
+  let shippingAddress: any;
+  if (shippingAddressOverride) {
+    shippingAddress = shippingAddressOverride;
+  } else {
+    const o = order as any;
+    if (o.shippingName && o.shippingAddress && o.shippingCity && o.shippingCountry) {
+      shippingAddress = {
+        consignee: o.shippingName,
+        phone: o.shippingPhone || "",
+        address: o.shippingAddress,
+        city: o.shippingCity,
+        province: o.shippingProvince || o.shippingCity,
+        zip: o.shippingZip || "",
+        country: o.shippingCountry,
+      };
+    } else {
+      // Fallback: parse or split full address by comma
+      const parts = (order.deliveryAddress || "").split(",").map(p => p.trim());
+      const country = parts.pop() || "GH";
+      const zip = parts.length > 3 ? parts.pop() : "";
+      const province = parts.length > 2 ? parts.pop() : "";
+      const city = parts.length > 1 ? parts.pop() : "";
+      const address = parts.join(", ") || order.deliveryAddress;
+      
+      let consignee = "Customer";
+      let phone = "";
+      try {
+        const userRec = await storage.getUserById(order.userId);
+        if (userRec) {
+          consignee = userRec.name || "Customer";
+          phone = userRec.phone || "";
+        }
+      } catch {}
+
+      shippingAddress = {
+        consignee,
+        phone,
+        address,
+        city: city || "Accra",
+        province: province || city || "Greater Accra",
+        zip: zip || "00233",
+        country,
+      };
+    }
   }
 
-  try {
-    // Build CJ order items — try cjVid first, fall back to fetching variants from CJ
-    const cjItems: { vid: string; quantity: number }[] = [];
-    const missingVid: string[] = [];
+  if (!shippingAddress.country || !shippingAddress.address || !shippingAddress.consignee) {
+    throw new Error("Complete shipping details (consignee, address, city, country) are required to fulfill via CJ.");
+  }
 
-    for (const item of order.items) {
-      if (item.menuItemId) {
-        const menuItem = await storage.getMenuItem(item.menuItemId);
-        if (menuItem?.cjVid) {
-          cjItems.push({ vid: menuItem.cjVid, quantity: item.quantity });
-        } else if (menuItem?.cjPid) {
-          // Try to fetch the variant ID from CJ now
-          try {
-            const detail = await getCJProductDetail(menuItem.cjPid);
-            if (detail.variants && detail.variants.length > 0) {
-              const vid = detail.variants[0].vid;
-              // Save it for future orders
-              await db.update(menuItems)
-                .set({ cjVid: vid, updatedAt: new Date() })
-                .where(eq(menuItems.id, menuItem.id));
-              cjItems.push({ vid, quantity: item.quantity });
-            } else {
-              missingVid.push(item.name);
-            }
-          } catch {
+  const cjItems: { vid: string; quantity: number }[] = [];
+  const missingVid: string[] = [];
+
+  for (const item of order.items) {
+    if (item.menuItemId) {
+      const menuItem = await storage.getMenuItem(item.menuItemId);
+      if (menuItem?.cjVid) {
+        cjItems.push({ vid: menuItem.cjVid, quantity: item.quantity });
+      } else if (menuItem?.cjPid) {
+        try {
+          const detail = await getCJProductDetail(menuItem.cjPid);
+          if (detail.variants && detail.variants.length > 0) {
+            const vid = detail.variants[0].vid;
+            await db.update(menuItems)
+              .set({ cjVid: vid, updatedAt: new Date() })
+              .where(eq(menuItems.id, menuItem.id));
+            cjItems.push({ vid, quantity: item.quantity });
+          } else {
             missingVid.push(item.name);
           }
-        } else {
+        } catch {
           missingVid.push(item.name);
         }
+      } else {
+        missingVid.push(item.name);
       }
     }
+  }
 
-    if (cjItems.length === 0) {
-      return res.status(400).json({
-        error: `Cannot fulfill: none of the products in this order are linked to CJ. Products without CJ link: ${missingVid.join(", ")}. Re-import these products from the CJ Import tab.`,
-      });
-    }
+  if (cjItems.length === 0) {
+    throw new Error(`Cannot fulfill: none of the products in this order are linked to CJ. Products without CJ link: ${missingVid.join(", ")}`);
+  }
 
-    if (missingVid.length > 0) {
-      console.warn(`Partial CJ fulfill for order ${orderId} — skipping non-CJ items: ${missingVid.join(", ")}`);
-    }
+  const referenceNo = `TRENDS-${orderId}-${Date.now()}`;
+  const result = await createCJOrder(referenceNo, shippingAddress, cjItems);
 
-    const referenceNo = `TRENDS-${orderId}-${Date.now()}`;
-    const result = await createCJOrder(referenceNo, shippingAddress, cjItems);
-
-    // Save CJ order details back to our order
-    await db.update(orders)
-      .set({
-        cjOrderId: result.orderId,
-        cjOrderNum: result.orderNumber || result.orderNum || null,
-        shippingCountry: shippingAddress.country,
-        updatedAt: new Date(),
-      })
-      .where(eq(orders.id, orderId));
-
-    res.json({
-      success: true,
+  await db.update(orders)
+    .set({
       cjOrderId: result.orderId,
-      cjOrderNum: result.orderNumber || result.orderNum,
-      skippedItems: missingVid.length > 0 ? missingVid : undefined,
-    });
+      cjOrderNum: result.orderNumber || result.orderNum || null,
+      shippingCountry: shippingAddress.country,
+      updatedAt: new Date(),
+    })
+    .where(eq(orders.id, orderId));
+
+  return {
+    success: true,
+    cjOrderId: result.orderId,
+    cjOrderNum: result.orderNumber || result.orderNum,
+    skippedItems: missingVid.length > 0 ? missingVid : undefined,
+  };
+}
+
+router.post("/orders/:orderId/fulfill", auth, requireRole("admin", "warehouse"), async (req, res) => {
+  const orderId = Number(req.params.orderId);
+  const { shippingAddress } = req.body;
+
+  try {
+    const result = await fulfillOrderWithCJ(orderId, shippingAddress);
+    res.json(result);
   } catch (err: any) {
     console.error("CJ order fulfillment error:", err);
     res.status(500).json({ error: err.message || "CJ order fulfillment failed" });

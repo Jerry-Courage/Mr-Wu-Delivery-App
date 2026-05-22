@@ -925,9 +925,9 @@ export default function AdminDashboard() {
               {/* Stat Cards */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
                 {[
-                  { label: "Total Revenue", value: fmt(stats?.totalRevenue || 0), icon: DollarSign, color: "text-emerald-400", trend: "+12.5%" },
-                  { label: "Total Orders", value: stats?.totalOrders || 0, icon: ShoppingBag, color: "text-blue-400", trend: "+8.2%" },
-                  { label: "Active Customers", value: stats?.activeUsers || 0, icon: Users, color: "text-purple-400", trend: "+5.1%" },
+                  { label: "Total Revenue", value: fmt(stats?.totalRevenue || 0), icon: DollarSign, color: "text-emerald-400", trend: "30 Days" },
+                  { label: "Total Orders", value: stats?.totalOrders || 0, icon: ShoppingBag, color: "text-blue-400", trend: "30 Days" },
+                  { label: "Active Customers", value: stats?.activeUsers || 0, icon: Users, color: "text-purple-400", trend: "All Time" },
                 ].map((stat, i) => (
                   <Card key={i} className={cn(
                     "bg-card  border-border p-4 lg:p-6 space-y-4 hover:border-primary/30 transition-all duration-500 group hover:shadow-[0_0_30px_rgba(6,182,212,0.05)]",
@@ -937,7 +937,7 @@ export default function AdminDashboard() {
                       <div className={cn("p-2 lg:p-3 rounded-2xl bg-white/5", stat.color, "group-hover:scale-110 transition-transform duration-500")}>
                         <stat.icon size={20} />
                       </div>
-                      <span className="text-emerald-400 text-[10px] lg:text-xs font-black bg-emerald-400/20 px-2 py-1 rounded-full border border-emerald-400/30 shadow-[0_0_10px_rgba(52,211,153,0.1)]">{stat.trend}</span>
+                      <span className="text-muted-foreground text-[9px] lg:text-[10px] font-black uppercase tracking-widest bg-white/5 px-2 py-1 rounded-full border border-border/50">{stat.trend}</span>
                     </div>
                     <div>
                       <p className="text-muted-foreground text-[10px] lg:text-xs font-black uppercase tracking-[0.2em] opacity-90">{stat.label}</p>
@@ -1273,8 +1273,15 @@ export default function AdminDashboard() {
                                   size="sm"
                                   onClick={() => {
                                     // Pre-fill address from order if possible
-                                    const addr = order.deliveryAddress || "";
-                                    setFulfillAddress({ consignee: order.customer?.name || "", phone: order.customer?.phone || "", address: addr, city: "", province: "", zip: "", country: "" });
+                                    setFulfillAddress({ 
+                                      consignee: order.shippingName || order.customer?.name || "", 
+                                      phone: order.shippingPhone || order.customer?.phone || "", 
+                                      address: order.shippingAddress || order.deliveryAddress || "", 
+                                      city: order.shippingCity || "", 
+                                      province: order.shippingProvince || "", 
+                                      zip: order.shippingZip || "", 
+                                      country: order.shippingCountry || "" 
+                                    });
                                     setFulfillModal(order);
                                   }}
                                   className="h-8 px-3 rounded-xl bg-primary hover:bg-primary/90 text-xs font-bold gap-1"
